@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { Zap, Shield, Headphones, Clock, Star, ArrowRight, CheckCircle, Users, Brain, Wrench } from 'lucide-react';
 import Hero from '../components/ui/Hero';
 import Card, { CardBody } from '../components/ui/Card';
@@ -8,19 +9,26 @@ import { FadeInOnScroll, StaggerChildren, AnimatedCounter, FloatingElement } fro
 import { trackButtonClick } from '../utils/analytics';
 
 const Home = () => {
+  const navigate = useNavigate();
+  
   const handleExplorePlansClick = () => {
     trackButtonClick('Explore Plans', 'home_hero', '/products');
-    window.location.href = '/products';
+    navigate('/products');
   };
 
   const handleGetStartedClick = () => {
     trackButtonClick('Get Started', 'home_cta', '/products');
-    window.location.href = '/products';
+    navigate('/products');
   };
 
   const handleViewAllPlansClick = () => {
     trackButtonClick('View All Plans', 'home_packages', '/products');
-    window.location.href = '/products';
+    navigate('/products');
+  };
+  
+  const handleLearnMoreClick = (planName) => {
+    trackButtonClick(`Learn More - ${planName}`, 'home_packages', `/products#wordpress`);
+    navigate('/products#wordpress');
   };
 
   return (
@@ -178,7 +186,7 @@ const Home = () => {
                   <Button
                     variant="outline"
                     className="w-full mt-auto"
-                    onClick={handleViewAllPlansClick}
+                    onClick={() => handleLearnMoreClick('SwiftStarter')}
                   >
                     Learn More
                   </Button>
@@ -200,7 +208,7 @@ const Home = () => {
                   <Button
                     variant="primary"
                     className="w-full mt-auto"
-                    onClick={handleViewAllPlansClick}
+                    onClick={() => handleLearnMoreClick('SpeedMaster')}
                   >
                     Learn More
                   </Button>
@@ -222,7 +230,7 @@ const Home = () => {
                   <Button
                     variant="outline"
                     className="w-full mt-auto"
-                    onClick={handleViewAllPlansClick}
+                    onClick={() => handleLearnMoreClick('TurboPress')}
                   >
                     Learn More
                   </Button>
