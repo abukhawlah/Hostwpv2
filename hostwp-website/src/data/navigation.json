@@ -1,0 +1,115 @@
+{
+  "main": [
+    {
+      "label": "Home",
+      "path": "/",
+      "exact": true
+    },
+    {
+      "label": "Products",
+      "path": "/products",
+      "dropdown": [
+        {
+          "label": "Fast WordPress Hosting",
+          "path": "/products#wordpress",
+          "description": "Optimized for WordPress performance"
+        },
+        {
+          "label": "Cloud Hosting",
+          "path": "/products#cloud",
+          "description": "Scalable cloud infrastructure"
+        },
+        {
+          "label": "Dedicated Hosting",
+          "path": "/products#dedicated",
+          "description": "Enterprise-grade performance"
+        }
+      ]
+    },
+    {
+      "label": "Our Story",
+      "path": "/our-story"
+    },
+    {
+      "label": "Domains",
+      "path": "/domains"
+    },
+    {
+      "label": "Say Hello",
+      "path": "/contact"
+    }
+  ],
+  "footer": {
+    "company": [
+      {
+        "label": "Our Story",
+        "path": "/our-story"
+      },
+      {
+        "label": "White Glove Support",
+        "path": "/white-glove-support"
+      },
+      {
+        "label": "Contact",
+        "path": "/contact"
+      }
+    ],
+    "products": [
+      {
+        "label": "WordPress Hosting",
+        "path": "/products#wordpress"
+      },
+      {
+        "label": "Cloud Hosting",
+        "path": "/products#cloud"
+      },
+      {
+        "label": "Dedicated Hosting",
+        "path": "/products#dedicated"
+      },
+      {
+        "label": "Domains",
+        "path": "/domains"
+      }
+    ],
+    "legal": [
+      {
+        "label": "Terms & Conditions",
+        "path": "/terms"
+      },
+      {
+        "label": "Privacy Policy",
+        "path": "/privacy"
+      },
+      {
+        "label": "FAQ",
+        "path": "/faq"
+      },
+      {
+        "label": "Acceptable Use Policy",
+        "path": "/aup"
+      }
+    ],
+    "social": [
+      {
+        "label": "Twitter",
+        "url": "https://twitter.com/hostwp",
+        "icon": "twitter"
+      },
+      {
+        "label": "LinkedIn",
+        "url": "https://linkedin.com/company/hostwp",
+        "icon": "linkedin"
+      },
+      {
+        "label": "Facebook",
+        "url": "https://facebook.com/hostwp",
+        "icon": "facebook"
+      }
+    ]
+  },
+  "cta": {
+    "primary": "Get Started",
+    "secondary": "Learn More"
+  }
+}

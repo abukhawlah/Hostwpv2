@@ -1,0 +1,286 @@
+{
+  "home": {
+    "hero": {
+      "headline": "Ultra-Fast WordPress Hosting",
+      "subheadline": "Get your website online in minutes with our blazing-fast, reliable hosting solutions. 99.9% uptime guaranteed.",
+      "cta": "Start Your Website Today",
+      "secondaryCta": "See Our Plans",
+      "urgencyText": "Join 50,000+ websites already hosted",
+      "trustBadge": "99.9% Uptime Guarantee"
+    },
+    "features": [
+      {
+        "title": "Lightning Fast",
+        "description": "3x faster than competitors with optimized servers",
+        "icon": "zap",
+        "metric": "3x faster loading"
+      },
+      {
+        "title": "Rock Solid Security",
+        "description": "Advanced security measures to protect your website",
+        "icon": "shield",
+        "metric": "99.9% secure"
+      },
+      {
+        "title": "24/7 Expert Support",
+        "description": "Real hosting experts, not chatbots",
+        "icon": "headphones",
+        "metric": "12min avg response"
+      },
+      {
+        "title": "Easy Setup",
+        "description": "Get online in under 60 seconds",
+        "icon": "clock",
+        "metric": "1-click install"
+      }
+    ],
+    "socialProof": {
+      "title": "Trusted by Industry Leaders",
+      "stats": [
+        {
+          "number": "50,000+",
+          "label": "Websites Hosted"
+        },
+        {
+          "number": "99.9%",
+          "label": "Uptime Guarantee"
+        },
+        {
+          "number": "24/7",
+          "label": "Expert Support"
+        },
+        {
+          "number": "12min",
+          "label": "Avg Response Time"
+        }
+      ],
+      "testimonials": [
+        {
+          "quote": "HostWP transformed our website performance. 3x faster loading times!",
+          "author": "Sarah Johnson",
+          "company": "TechStartup Inc.",
+          "avatar": "/images/testimonial-1.jpg"
+        },
+        {
+          "quote": "Best hosting support I've ever experienced. They actually know what they're doing.",
+          "author": "Mike Chen",
+          "company": "Digital Agency Pro",
+          "avatar": "/images/testimonial-2.jpg"
+        },
+        {
+          "quote": "Switched from our old host and saw immediate improvements. Highly recommend!",
+          "author": "Lisa Rodriguez",
+          "company": "E-commerce Solutions",
+          "avatar": "/images/testimonial-3.jpg"
+        }
+      ]
+    }
+  },
+  "products": {
+    "hero": {
+      "headline": "Choose Your Perfect WordPress Hosting Plan",
+      "subheadline": "Fast, secure, and fully maintained WordPress hosting with human support. We have the perfect solution for your needs."
+    },
+    "categories": [
+      {
+        "id": "wordpress",
+        "name": "Fast WordPress Hosting",
+        "description": "Optimized specifically for WordPress with 1-click installation",
+        "popular": true,
+        "plans": [
+          {
+            "name": "SwiftStarter",
+            "price": 45.00,
+            "period": "month",
+            "description": "For entrepreneurs and small sites looking to leap ahead without drowning in tech",
+            "features": [
+              "1 Website",
+              "10GB NVMe Storage",
+              "Unlimited Bandwidth",
+              "Free SSL Certificate",
+              "Daily Backups",
+              "One-click WordPress Installation",
+              "Easy Migration (Free)",
+              "Ironclad Security",
+              "Managed Updates",
+              "Clone Your Site",
+              "Command Line & SSH",
+              "Speed Demon (Redis Cache)",
+              "Secure SFTP Access",
+              "CloudFlare Power",
+              "Development Environments",
+              "Activity Logs & Permissions",
+              "SSO & MFA",
+              "Priority Support",
+              "—",
+              "—"
+            ],
+            "cta": "Get Started",
+            "upmindUrl": "fast-wordpress-hosting/swiftstarter"
+          },
+          {
+            "name": "SpeedMaster",
+            "price": 95.00,
+            "period": "month",
+            "description": "For brands building momentum — includes monthly maintenance so your site stays polished",
+            "features": [
+              "3 Websites",
+              "30GB NVMe Storage",
+              "Unlimited Bandwidth",
+              "Free SSL Certificate",
+              "Daily Backups",
+              "One-click WordPress Installation",
+              "Easy Migration (Free)",
+              "Ironclad Security",
+              "Managed Updates",
+              "Clone Your Site",
+              "Command Line & SSH",
+              "Speed Demon (Redis Cache)",
+              "Secure SFTP Access",
+              "CloudFlare Power",
+              "Development Environments",
+              "Activity Logs & Permissions",
+              "SSO & MFA",
+              "Priority Support",
+              "Monthly Maintenance",
+              "—"
+            ],
+            "cta": "Get Started",
+            "upmindUrl": "fast-wordpress-hosting/speedmaster",
+            "popular": true
+          },
+          {
+            "name": "TurboPress",
+            "price": 135.00,
+            "period": "month",
+            "description": "For serious businesses that need serious speed, priority support, and full-service care",
+            "features": [
+              "10 Websites",
+              "80GB NVMe Storage",
+              "Unlimited Bandwidth",
+              "Free SSL Certificate",
+              "Daily Backups",
+              "One-click WordPress Installation",
+              "Easy Migration (Free)",
+              "Ironclad Security",
+              "Managed Updates",
+              "Clone Your Site",
+              "Command Line & SSH",
+              "Speed Demon (Redis Cache)",
+              "Secure SFTP Access",
+              "CloudFlare Power",
+              "Development Environments",
+              "Activity Logs & Permissions",
+              "SSO & MFA",
+              "Priority Support",
+              "Monthly Maintenance",
+              "White-glove Support"
+            ],
+            "cta": "Get Started",
+            "upmindUrl": "fast-wordpress-hosting/turbopress"
+          }
+        ]
+      }
+    ]
+  },
+  "story": {
+    "hero": {
+      "headline": "Our Story",
+      "subheadline": "Building the future of web hosting, one website at a time."
+    },
+    "mission": "At HostWP, we believe every website deserves lightning-fast performance and rock-solid reliability. Founded by hosting experts who were frustrated with slow, unreliable hosting providers, we set out to create something better.",
+    "timeline": [
+      {
+        "year": "2020",
+        "title": "The Beginning",
+        "description": "Founded by a team of hosting experts with 20+ years combined experience"
+      },
+      {
+        "year": "2021",
+        "title": "First 1,000 Customers",
+        "description": "Reached our first milestone with 99.9% customer satisfaction"
+      },
+      {
+        "year": "2022",
+        "title": "Global Expansion",
+        "description": "Launched data centers worldwide for faster global performance"
+      },
+      {
+        "year": "2023",
+        "title": "50,000+ Websites",
+        "description": "Now hosting over 50,000 websites with industry-leading performance"
+      }
+    ],
+    "values": [
+      {
+        "title": "Performance First",
+        "description": "Every decision we make is focused on making your website faster"
+      },
+      {
+        "title": "Expert Support",
+        "description": "Real hosting experts, available 24/7 to help you succeed"
+      },
+      {
+        "title": "Transparency",
+        "description": "No hidden fees, no surprises. Just honest, reliable hosting"
+      }
+    ]
+  },
+  "domains": {
+    "hero": {
+      "headline": "Find Your Perfect Domain",
+      "subheadline": "Search from over 500 domain extensions and get your website online today."
+    },
+    "features": [
+      {
+        "title": "500+ Extensions",
+        "description": "From .com to .tech, find the perfect domain for your brand"
+      },
+      {
+        "title": "Free Privacy Protection",
+        "description": "Keep your personal information private and secure"
+      },
+      {
+        "title": "Easy Management",
+        "description": "Simple domain management tools in your control panel"
+      },
+      {
+        "title": "Bundle & Save",
+        "description": "Save when you bundle domains with hosting plans"
+      }
+    ]
+  },
+  "contact": {
+    "hero": {
+      "headline": "Say Hello",
+      "subheadline": "Have questions? We'd love to hear from you. Our hosting experts are here to help."
+    },
+    "contactMethods": [
+      {
+        "type": "chat",
+        "title": "Live Chat",
+        "description": "Chat with our experts now",
+        "availability": "24/7",
+        "responseTime": "Under 2 minutes"
+      },
+      {
+        "type": "email",
+        "title": "Email Support",
+        "description": "Send us a detailed message",
+        "availability": "24/7",
+        "responseTime": "Under 2 hours"
+      },
+      {
+        "type": "phone",
+        "title": "Phone Support",
+        "description": "Speak with an expert directly",
+        "availability": "24/7",
+        "responseTime": "Immediate"
+      }
+    ],
+    "form": {
+      "title": "Send us a message",
+      "subtitle": "We'll get back to you within 2 hours"
+    }
+  }
+}
