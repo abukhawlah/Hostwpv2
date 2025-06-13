@@ -28,6 +28,7 @@ export const TABLES = {
   IMAGE_CATEGORIES: 'image_categories',
   TEAM_MEMBERS: 'team_members',
   SEO_SETTINGS: 'seo_settings',
+  SITE_SETTINGS: 'site_settings',
   ADMIN_USERS: 'admin_users',
   ECOMMERCE_PRODUCTS: 'ecommerce_products',
   ECOMMERCE_CATEGORIES: 'ecommerce_categories',
@@ -114,6 +115,36 @@ export const dbHelpers = {
       .from(TABLES.SEO_SETTINGS)
       .select('*')
       .single();
+  },
+
+  // Site Settings
+  async getSiteSettings() {
+    const { data, error } = await supabase
+      .from(TABLES.SITE_SETTINGS)
+      .select('*')
+      .eq('id', 1)
+      .single();
+    
+    if (error && error.code === 'PGRST116') {
+      // No settings found, return null to trigger creation of default settings
+      return { data: null, error: null };
+    }
+    
+    return { data, error };
+  },
+
+  async updateSiteSettings(settings) {
+    const { data, error } = await supabase
+      .from(TABLES.SITE_SETTINGS)
+      .upsert({
+        id: 1,
+        ...settings,
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+    
+    return { data, error };
   },
 
   // Images

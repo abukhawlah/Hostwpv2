@@ -1,4 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react';
+import { supabase, dbHelpers } from '../lib/supabase';
 
 // Site Settings Context
 const SiteSettingsContext = createContext();
@@ -14,9 +15,6 @@ const DEFAULT_SETTINGS = {
   support_phone: '1-800-HOST-WP'
 };
 
-// Settings storage key
-const SETTINGS_STORAGE_KEY = 'hostwp_site_settings';
-
 // Hook to use site settings
 export const useSiteSettings = () => {
   const context = useContext(SiteSettingsContext);
@@ -30,20 +28,11 @@ export const useSiteSettings = () => {
 export const SiteSettingsProvider = ({ children }) => {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Load settings from localStorage on mount
+  // Load settings from Supabase on mount
   useEffect(() => {
-    try {
-      const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
-      if (savedSettings) {
-        const parsedSettings = JSON.parse(savedSettings);
-        setSettings({ ...DEFAULT_SETTINGS, ...parsedSettings });
-      }
-    } catch (error) {
-      console.error('Error loading settings:', error);
-    } finally {
-      setLoading(false);
-    }
+    loadSettings();
   }, []);
 
   // Apply settings to document when they change
@@ -60,16 +49,72 @@ export const SiteSettingsProvider = ({ children }) => {
     }
   }, [settings, loading]);
 
-  // Update settings function
-  const updateSettings = (newSettings) => {
-    const updatedSettings = { ...settings, ...newSettings };
-    setSettings(updatedSettings);
-    
-    // Save to localStorage
+  const loadSettings = async () => {
     try {
-      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(updatedSettings));
+      setLoading(true);
+      setError(null);
+
+      const { data, error } = await dbHelpers.getSiteSettings();
+
+      if (error) {
+        console.error('Error loading settings from Supabase:', error);
+        setError('Failed to load settings');
+        // Fall back to default settings
+        setSettings(DEFAULT_SETTINGS);
+      } else if (data) {
+        // Merge with defaults to ensure all properties exist
+        setSettings({ ...DEFAULT_SETTINGS, ...data });
+      } else {
+        // No settings found, create default settings
+        const { data: newData, error: createError } = await dbHelpers.updateSiteSettings(DEFAULT_SETTINGS);
+        if (createError) {
+          console.error('Error creating default settings:', createError);
+          setSettings(DEFAULT_SETTINGS);
+        } else {
+          setSettings({ ...DEFAULT_SETTINGS, ...newData });
+        }
+      }
     } catch (error) {
-      console.error('Error saving settings:', error);
+      console.error('Error in loadSettings:', error);
+      setError('Failed to load settings');
+      setSettings(DEFAULT_SETTINGS);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Update settings function
+  const updateSettings = async (newSettings) => {
+    try {
+      const updatedSettings = { ...settings, ...newSettings };
+      
+      // Optimistically update local state first for immediate UI feedback
+      setSettings(updatedSettings);
+
+      // Save to Supabase
+      const { data, error } = await dbHelpers.updateSiteSettings(updatedSettings);
+
+      if (error) {
+        console.error('Error saving settings to Supabase:', error);
+        // Revert optimistic update on error
+        setSettings(settings);
+        setError('Failed to save settings');
+        return { success: false, error };
+      }
+
+      // Update with the data returned from Supabase
+      if (data) {
+        setSettings({ ...DEFAULT_SETTINGS, ...data });
+      }
+
+      setError(null);
+      return { success: true, data };
+    } catch (error) {
+      console.error('Error in updateSettings:', error);
+      // Revert optimistic update on error
+      setSettings(settings);
+      setError('Failed to save settings');
+      return { success: false, error };
     }
   };
 
@@ -110,9 +155,11 @@ export const SiteSettingsProvider = ({ children }) => {
     settings,
     updateSettings,
     loading,
-    resetToDefaults: () => {
-      setSettings(DEFAULT_SETTINGS);
-      localStorage.removeItem(SETTINGS_STORAGE_KEY);
+    error,
+    refreshSettings: loadSettings,
+    resetToDefaults: async () => {
+      const { success } = await updateSettings(DEFAULT_SETTINGS);
+      return success;
     }
   };
 

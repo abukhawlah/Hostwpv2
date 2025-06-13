@@ -19,7 +19,7 @@ import Card from '../ui/Card';
 import Button from '../ui/Button';
 
 const SettingsManager = () => {
-  const { settings, updateSettings, loading } = useSiteSettings();
+  const { settings, updateSettings, loading, error: settingsError } = useSiteSettings();
   const [saving, setSaving] = useState(false);
   const [uploadingFavicon, setUploadingFavicon] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -70,23 +70,34 @@ const SettingsManager = () => {
       setSaving(true);
       setMessage({ type: '', text: '' });
 
-      // If there's a new favicon file, convert it to data URL and save
-      if (faviconFile && faviconPreview) {
-        updateSettings({ 
-          favicon_url: faviconPreview,
-          favicon_enabled: true 
+      // Prepare the settings to save
+      const settingsToSave = {
+        favicon_enabled: settings.favicon_enabled,
+        favicon_url: faviconPreview || settings.favicon_url,
+        site_title: settings.site_title,
+        site_description: settings.site_description,
+        meta_keywords: settings.meta_keywords,
+        contact_email: settings.contact_email,
+        support_phone: settings.support_phone
+      };
+
+      // Save to Supabase using the global hook
+      const result = await updateSettings(settingsToSave);
+
+      if (result.success) {
+        setFaviconFile(null);
+        setFaviconPreview(null);
+        setMessage({ type: 'success', text: 'Settings saved successfully to database!' });
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+      } else {
+        console.error('Supabase error:', result.error);
+        setMessage({ 
+          type: 'error', 
+          text: `Failed to save to database: ${result.error?.message || 'Unknown error'}` 
         });
       }
-
-      // Simulate saving delay for UX
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      setFaviconFile(null);
-      setFaviconPreview(null);
-      setMessage({ type: 'success', text: 'Settings saved successfully!' });
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
     } catch (error) {
       console.error('Error saving settings:', error);
       setMessage({ type: 'error', text: 'Failed to save settings' });
@@ -141,7 +152,18 @@ const SettingsManager = () => {
         </Button>
       </div>
 
-      {/* Message */}
+      {/* Messages */}
+      {settingsError && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 rounded-lg border bg-red-50 border-red-200 text-red-800 flex items-center"
+        >
+          <AlertCircle className="w-5 h-5 mr-2" />
+          Database Connection Error: {settingsError}
+        </motion.div>
+      )}
+      
       {message.text && (
         <motion.div
           initial={{ opacity: 0, y: -20 }}
