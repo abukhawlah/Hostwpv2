@@ -41,9 +41,14 @@ const AdminLogin = () => {
         console.error('Login error:', error); // Debug log
         setError(error.message);
       } else {
-        console.log('Login successful, navigating to /admin'); // Debug log
-        // Force a page reload to ensure auth state is picked up
-        window.location.href = '/admin';
+        console.log('Login successful, preparing to navigate to /admin'); // Debug log
+        
+        // Add a small delay to ensure state is updated
+        setTimeout(() => {
+          console.log('Navigating to /admin dashboard');
+          // Force a page reload to ensure auth state is picked up
+          window.location.href = '/admin';
+        }, 500); // 500ms delay
       }
     } catch (err) {
       console.error('Unexpected login error:', err); // Debug log

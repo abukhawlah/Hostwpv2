@@ -10,21 +10,31 @@ const ProtectedRoute = ({ children }) => {
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    // Give more time for auth to initialize, especially for demo user
-    const timer = setTimeout(() => {
+    // If we have a user, stop checking immediately
+    if (user) {
+      console.log('ProtectedRoute - user found, stopping check immediately');
       setIsChecking(false);
-    }, 2000);
+      return;
+    }
+
+    // Otherwise, set a timeout to stop checking
+    const timer = setTimeout(() => {
+      console.log('ProtectedRoute - timeout reached, setting isChecking to false');
+      setIsChecking(false);
+    }, 1000);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [user]); // Add user as dependency
 
-  // Debug logging
+  // Debug logging with more detail
   console.log('ProtectedRoute - user:', user, 'loading:', loading, 'isChecking:', isChecking);
-  console.log('localStorage demo_user:', localStorage.getItem('demo_user'));
-  console.log('localStorage demo_admin:', localStorage.getItem('demo_admin'));
+  console.log('ProtectedRoute - localStorage demo_user:', localStorage.getItem('demo_user'));
+  console.log('ProtectedRoute - localStorage demo_admin:', localStorage.getItem('demo_admin'));
+  console.log('ProtectedRoute - location:', location.pathname);
 
   // Show loading spinner while checking authentication
   if (loading || isChecking) {
+    console.log('ProtectedRoute - showing loading state');
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <motion.div
@@ -48,10 +58,12 @@ const ProtectedRoute = ({ children }) => {
 
   // Redirect to login if not authenticated
   if (!user) {
+    console.log('ProtectedRoute - no user found, redirecting to login');
     return <Navigate to="/admin/login" state={{ from: location }} replace />;
   }
 
   // Render protected content if authenticated
+  console.log('ProtectedRoute - user authenticated, rendering children');
   return children;
 };
 

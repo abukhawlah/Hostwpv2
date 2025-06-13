@@ -1,26 +1,106 @@
 import { useState, useEffect } from 'react';
-import contentData from '../data/content.json';
+import { supabase } from '../lib/supabase';
 
-export const useContent = (pageKey) => {
+// Hook for fetching dynamic website content from Supabase
+export const useContent = (sectionKey) => {
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    try {
-      if (contentData[pageKey]) {
-        setContent(contentData[pageKey]);
-      } else {
-        setError(`Content not found for page: ${pageKey}`);
+    const fetchContent = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('website_sections')
+          .select('content')
+          .eq('section_key', sectionKey)
+          .eq('is_active', true)
+          .single();
+
+        if (error) throw error;
+        
+        setContent(data?.content || null);
+      } catch (err) {
+        console.error(`Error loading content for ${sectionKey}:`, err);
+        setError(`Error loading content: ${err.message}`);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError(`Error loading content: ${err.message}`);
-    } finally {
-      setLoading(false);
+    };
+
+    if (sectionKey) {
+      fetchContent();
     }
-  }, [pageKey]);
+  }, [sectionKey]);
 
   return { content, loading, error };
+};
+
+// Hook for fetching hosting plans
+export const useHostingPlans = () => {
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('hosting_plans')
+          .select('*')
+          .eq('is_active', true)
+          .order('sort_order', { ascending: true });
+
+        if (error) throw error;
+        
+        setPlans(data || []);
+      } catch (err) {
+        console.error('Error loading hosting plans:', err);
+        setError(`Error loading hosting plans: ${err.message}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPlans();
+  }, []);
+
+  return { plans, loading, error };
+};
+
+// Hook for fetching website features
+export const useWebsiteFeatures = () => {
+  const [features, setFeatures] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchFeatures = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('website_features')
+          .select('*')
+          .eq('is_active', true)
+          .order('sort_order', { ascending: true });
+
+        if (error) throw error;
+        
+        setFeatures(data || []);
+      } catch (err) {
+        console.error('Error loading website features:', err);
+        setError(`Error loading website features: ${err.message}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeatures();
+  }, []);
+
+  return { features, loading, error };
 };
 
 export const useNavigation = () => {

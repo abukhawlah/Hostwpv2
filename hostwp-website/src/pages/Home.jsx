@@ -7,9 +7,28 @@ import Card, { CardBody } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { FadeInOnScroll, StaggerChildren, AnimatedCounter, FloatingElement } from '../components/animations/ScrollAnimations';
 import { trackButtonClick } from '../utils/analytics';
+import { useContent, useHostingPlans, useWebsiteFeatures } from '../hooks/useContent';
+
+const iconMap = {
+  CheckCircle,
+  Shield,
+  Wrench,
+  Headphones,
+  Brain,
+  Zap,
+  Clock,
+  Users
+};
 
 const Home = () => {
   const navigate = useNavigate();
+  
+  // Fetch dynamic content
+  const { content: heroContent, loading: heroLoading } = useContent('home_hero');
+  const { content: whyChooseContent, loading: whyChooseLoading } = useContent('home_why_choose');
+  const { content: packagesContent, loading: packagesLoading } = useContent('home_packages');
+  const { plans, loading: plansLoading } = useHostingPlans();
+  const { features, loading: featuresLoading } = useWebsiteFeatures();
   
   const handleExplorePlansClick = () => {
     trackButtonClick('Explore Plans', 'home_hero', '/products');
@@ -31,304 +50,173 @@ const Home = () => {
     navigate('/products#wordpress');
   };
 
+  // Show loading state while content is being fetched
+  if (heroLoading || whyChooseLoading || packagesLoading || plansLoading || featuresLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading content...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       {/* Hero Section */}
-      <Hero
-        headline="Built for Speed. Backed by Humans."
-        subheadline="Done-for-you hosting — fast, secure, and fully maintained by real humans."
-        description="Your business shouldn't have to worry about updates, security, or page tweaks. With HostWP, you get more than just blazing-fast WordPress hosting — you get a dedicated team that takes care of plugin updates, theme maintenance, content changes, and everything in between."
-        primaryCta="Explore Plans"
-        onPrimaryClick={handleExplorePlansClick}
-        className="bg-gradient-to-br from-primary-50 via-white to-blue-50"
-      >
-        {/* Trust indicators */}
-        <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-8 text-sm text-gray-600 mt-8">
-          <div className="flex items-center">
-            <div className="w-2 h-2 bg-green-500 rounded-full mr-2" />
-            No ticket numbers. No stress.
-          </div>
-          <div className="flex items-center">
-            <Shield className="w-4 h-4 text-primary-600 mr-2" />
-            Just a website that works
-          </div>
-        </div>
-      </Hero>
+      {heroContent && (
+        <Hero
+          headline={heroContent.headline}
+          subheadline={heroContent.subheadline}
+          description={heroContent.description}
+          primaryCta={heroContent.primaryCta}
+          onPrimaryClick={handleExplorePlansClick}
+          className="bg-gradient-to-br from-primary-50 via-white to-blue-50"
+        >
+          {/* Trust indicators */}
+          {heroContent.trustIndicators && (
+            <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-8 text-sm text-gray-600 mt-8">
+              {heroContent.trustIndicators.map((indicator, index) => (
+                <div key={index} className="flex items-center">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2" />
+                  {indicator}
+                </div>
+              ))}
+            </div>
+          )}
+        </Hero>
+      )}
 
       {/* Why Choose HostWP Section */}
-      <section className="section-padding bg-white">
-        <div className="container-custom">
-          <FadeInOnScroll>
-            <div className="text-center mb-16">
-              <div className="flex items-center justify-center mb-4">
-                <Zap className="w-6 h-6 text-primary-600 mr-2" />
-                <span className="text-lg font-semibold text-primary-600">Why Choose HostWP?</span>
-              </div>
-              <h2 className="section-title">Hosting with a Human Touch</h2>
-              <p className="section-subtitle max-w-3xl mx-auto">
-                Most hosting companies give you a server and send you on your way. We give you a team.
-              </p>
-            </div>
-          </FadeInOnScroll>
-
-          <StaggerChildren className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <Card className="group">
-              <CardBody>
-                <div className="flex items-start mb-4">
-                  <CheckCircle className="w-6 h-6 text-green-500 mr-3 mt-1 flex-shrink-0" />
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">
-                      Blazing-fast load times
-                    </h3>
-                    <p className="text-gray-600">
-                      Optimized WordPress stack built for speed.
-                    </p>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-
-            <Card className="group">
-              <CardBody>
-                <div className="flex items-start mb-4">
-                  <Shield className="w-6 h-6 text-blue-500 mr-3 mt-1 flex-shrink-0" />
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">
-                      Rock-solid security
-                    </h3>
-                    <p className="text-gray-600">
-                      Proactive malware scans, daily backups, firewall, and uptime monitoring.
-                    </p>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-
-            <Card className="group">
-              <CardBody>
-                <div className="flex items-start mb-4">
-                  <Wrench className="w-6 h-6 text-orange-500 mr-3 mt-1 flex-shrink-0" />
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">
-                      Ongoing maintenance
-                    </h3>
-                    <p className="text-gray-600">
-                      Plugin/theme updates, page edits, and performance tuning done for you.
-                    </p>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-
-            <Card className="group">
-              <CardBody>
-                <div className="flex items-start mb-4">
-                  <Headphones className="w-6 h-6 text-purple-500 mr-3 mt-1 flex-shrink-0" />
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">
-                      Support that speaks human
-                    </h3>
-                    <p className="text-gray-600">
-                      Talk to people who care, not ticket robots.
-                    </p>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-
-            <Card className="group">
-              <CardBody>
-                <div className="flex items-start mb-4">
-                  <Brain className="w-6 h-6 text-indigo-500 mr-3 mt-1 flex-shrink-0" />
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">
-                      Business-first thinking
-                    </h3>
-                    <p className="text-gray-600">
-                      We don't just host websites, we help businesses thrive online.
-                    </p>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-          </StaggerChildren>
-        </div>
-      </section>
-
-      {/* Hosting Packages Section */}
-      <section className="section-padding bg-gray-50">
-        <div className="container-custom">
-          <FadeInOnScroll>
-            <div className="text-center mb-16">
-              <div className="flex items-center justify-center mb-4">
-                <Users className="w-6 h-6 text-primary-600 mr-2" />
-                <span className="text-lg font-semibold text-primary-600">Hosting Packages</span>
-              </div>
-              <h2 className="section-title">That Work Hard So You Don't Have To</h2>
-              <p className="section-subtitle">
-                Whether you're just starting out, scaling fast, or running a high-traffic business — we've got you covered.
-              </p>
-            </div>
-          </FadeInOnScroll>
-
-          <StaggerChildren className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-            {/* SwiftStarter */}
-            <Card className="group hover:shadow-xl transition-shadow duration-300 h-full flex flex-col">
-              <CardBody className="flex-grow flex flex-col">
-                <div className="text-center flex-grow flex flex-col">
-                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <span className="text-2xl">🐟</span>
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">SwiftStarter</h3>
-                  <p className="text-gray-600 mb-6 flex-grow">
-                    For entrepreneurs and small sites looking to leap ahead without drowning in tech.
-                  </p>
-                  <Button
-                    variant="outline"
-                    className="w-full mt-auto"
-                    onClick={() => handleLearnMoreClick('SwiftStarter')}
-                  >
-                    Learn More
-                  </Button>
-                </div>
-              </CardBody>
-            </Card>
-
-            {/* SpeedMaster */}
-            <Card className="group hover:shadow-xl transition-shadow duration-300 border-primary-200 h-full flex flex-col">
-              <CardBody className="flex-grow flex flex-col">
-                <div className="text-center flex-grow flex flex-col">
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <span className="text-2xl">🏁</span>
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">SpeedMaster</h3>
-                  <p className="text-gray-600 mb-6 flex-grow">
-                    For brands building momentum — includes monthly maintenance so your site stays polished.
-                  </p>
-                  <Button
-                    variant="primary"
-                    className="w-full mt-auto"
-                    onClick={() => handleLearnMoreClick('SpeedMaster')}
-                  >
-                    Learn More
-                  </Button>
-                </div>
-              </CardBody>
-            </Card>
-
-            {/* TurboPress */}
-            <Card className="group hover:shadow-xl transition-shadow duration-300 h-full flex flex-col">
-              <CardBody className="flex-grow flex flex-col">
-                <div className="text-center flex-grow flex flex-col">
-                  <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <span className="text-2xl">🚀</span>
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">TurboPress</h3>
-                  <p className="text-gray-600 mb-6 flex-grow">
-                    For serious businesses that need serious speed, priority support, and full-service care.
-                  </p>
-                  <Button
-                    variant="outline"
-                    className="w-full mt-auto"
-                    onClick={() => handleLearnMoreClick('TurboPress')}
-                  >
-                    Learn More
-                  </Button>
-                </div>
-              </CardBody>
-            </Card>
-          </StaggerChildren>
-
-          <FadeInOnScroll>
-            <div className="text-center">
-              <Button
-                variant="primary"
-                size="lg"
-                onClick={handleViewAllPlansClick}
-                icon={ArrowRight}
-                iconPosition="right"
-              >
-                View All Plans
-              </Button>
-            </div>
-          </FadeInOnScroll>
-        </div>
-      </section>
-
-      {/* Our Story Section */}
-      <section className="section-padding bg-white">
-        <div className="container-custom">
-          <FadeInOnScroll>
-            <div className="text-center mb-16">
-              <div className="flex items-center justify-center mb-4">
-                <span className="text-2xl mr-2">🌐</span>
-                <span className="text-lg font-semibold text-primary-600">Our Story</span>
-              </div>
-              <h2 className="section-title">Hosting, Reimagined</h2>
-            </div>
-          </FadeInOnScroll>
-
-          <div className="max-w-4xl mx-auto">
+      {whyChooseContent && (
+        <section className="section-padding bg-white">
+          <div className="container-custom">
             <FadeInOnScroll>
-              <div className="prose prose-lg mx-auto text-gray-700">
-                <p className="text-xl leading-relaxed mb-8">
-                  We started as a digital agency. Over the years, we noticed the same issue with almost every client: hosting was always a headache.
-                </p>
-                
-                <p className="text-lg leading-relaxed mb-6">
-                  Slow sites, confusing cPanels, shady support, and constant worry about things breaking.
-                </p>
-
-                <p className="text-lg leading-relaxed mb-6 font-semibold text-gray-900">
-                  It was a massive opportunity cost.
-                </p>
-
-                <p className="text-lg leading-relaxed mb-6">
-                  Business owners were spending more time chasing WordPress issues than growing their business.
-                </p>
-
-                <p className="text-lg leading-relaxed mb-8">
-                  And the so-called "support" from other hosting companies? Cold. Robotic. Ticket-driven.
-                </p>
-
-                <p className="text-lg leading-relaxed mb-6 font-semibold text-gray-900">
-                  So we decided to flip the script.
-                </p>
-
-                <p className="text-lg leading-relaxed mb-6">
-                  We created HostWP to offer done-for-you WordPress hosting — backed by real people who maintain your site like it's our own. We're not just selling space on a server. We're your partner in performance.
+              <div className="text-center mb-16">
+                <div className="flex items-center justify-center mb-4">
+                  <Zap className="w-6 h-6 text-primary-600 mr-2" />
+                  <span className="text-lg font-semibold text-primary-600">{whyChooseContent.badge}</span>
+                </div>
+                <h2 className="section-title">{whyChooseContent.headline}</h2>
+                <p className="section-subtitle max-w-3xl mx-auto">
+                  {whyChooseContent.subheadline}
                 </p>
               </div>
             </FadeInOnScroll>
-          </div>
-        </div>
-      </section>
 
-      {/* Final CTA Section */}
-      <section className="section-padding bg-gradient-to-r from-primary-600 to-primary-800 text-white">
+            <StaggerChildren className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {features.map((feature) => {
+                const IconComponent = iconMap[feature.icon] || CheckCircle;
+                const iconColors = {
+                  CheckCircle: 'text-green-500',
+                  Shield: 'text-blue-500',
+                  Wrench: 'text-orange-500',
+                  Headphones: 'text-purple-500',
+                  Brain: 'text-indigo-500'
+                };
+                
+                return (
+                  <Card key={feature.id} className="group">
+                    <CardBody>
+                      <div className="flex items-start mb-4">
+                        <IconComponent className={`w-6 h-6 ${iconColors[feature.icon] || 'text-gray-500'} mr-3 mt-1 flex-shrink-0`} />
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-900 mb-2">
+                            {feature.title}
+                          </h3>
+                          <p className="text-gray-600">
+                            {feature.description}
+                          </p>
+                        </div>
+                      </div>
+                    </CardBody>
+                  </Card>
+                );
+              })}
+            </StaggerChildren>
+          </div>
+        </section>
+      )}
+
+      {/* Hosting Packages Section */}
+      {packagesContent && (
+        <section className="section-padding bg-gray-50">
+          <div className="container-custom">
+            <FadeInOnScroll>
+              <div className="text-center mb-16">
+                <div className="flex items-center justify-center mb-4">
+                  <Users className="w-6 h-6 text-primary-600 mr-2" />
+                  <span className="text-lg font-semibold text-primary-600">{packagesContent.badge}</span>
+                </div>
+                <h2 className="section-title">{packagesContent.headline}</h2>
+                <p className="section-subtitle">
+                  {packagesContent.subheadline}
+                </p>
+              </div>
+            </FadeInOnScroll>
+
+            <StaggerChildren className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+              {plans.map((plan) => (
+                <Card 
+                  key={plan.id} 
+                  className={`group hover:shadow-xl transition-shadow duration-300 h-full flex flex-col ${plan.is_popular ? 'border-primary-200' : ''}`}
+                >
+                  <CardBody className="flex-grow flex flex-col">
+                    <div className="text-center flex-grow flex flex-col">
+                      <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <span className="text-2xl">{plan.icon_emoji}</span>
+                      </div>
+                      <h3 className="text-2xl font-bold text-gray-900 mb-4">{plan.name}</h3>
+                      <p className="text-gray-600 mb-6 flex-grow">
+                        {plan.description}
+                      </p>
+                      <Button
+                        variant="outline"
+                        className="w-full mt-auto"
+                        onClick={() => handleLearnMoreClick(plan.name)}
+                      >
+                        Learn More
+                      </Button>
+                    </div>
+                  </CardBody>
+                </Card>
+              ))}
+            </StaggerChildren>
+
+            <FadeInOnScroll>
+              <div className="text-center">
+                <Button onClick={handleViewAllPlansClick} size="lg">
+                  View All Plans
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
+              </div>
+            </FadeInOnScroll>
+          </div>
+        </section>
+      )}
+
+      {/* Bottom CTA Section */}
+      <section className="section-padding bg-gradient-to-r from-primary-600 to-primary-700">
         <div className="container-custom text-center">
           <FadeInOnScroll>
-            <div className="flex items-center justify-center mb-4">
-              <span className="text-2xl mr-2">🧩</span>
-              <span className="text-lg font-semibold text-primary-100">Ready to Ditch the Stress?</span>
+            <div className="max-w-3xl mx-auto">
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+                Ready to Experience the Difference?
+              </h2>
+              <p className="text-xl text-primary-100 mb-8">
+                Join thousands of businesses that trust HostWP for their hosting needs.
+              </p>
+              <Button 
+                onClick={handleGetStartedClick}
+                variant="secondary" 
+                size="lg"
+                className="bg-white text-primary-600 hover:bg-gray-50"
+              >
+                Get Started Today
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
             </div>
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
-              Say goodbye to DIY hosting, update anxiety, and broken sites.
-            </h2>
-            <p className="text-xl mb-8 text-primary-100 max-w-2xl mx-auto">
-              Say hello to human-powered speed, service, and support.
-            </p>
-            <Button
-              variant="secondary"
-              size="lg"
-              onClick={handleGetStartedClick}
-              trackingLabel="Get Started"
-              trackingLocation="home_bottom_cta"
-              icon={ArrowRight}
-              iconPosition="right"
-            >
-              Get Started
-            </Button>
           </FadeInOnScroll>
         </div>
       </section>

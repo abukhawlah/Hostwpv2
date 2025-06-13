@@ -25,12 +25,9 @@ const AdminLayout = () => {
 
   const navigation = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-    { name: 'Services', href: '/admin/services', icon: Settings },
-    { name: 'Projects', href: '/admin/projects', icon: FileText },
-    { name: 'Case Studies', href: '/admin/case-studies', icon: FileText },
-    { name: 'Team Members', href: '/admin/team', icon: Users },
-    { name: 'Images', href: '/admin/images', icon: Image },
-    { name: 'Products', href: '/admin/products', icon: ShoppingCart },
+    { name: 'Website Content', href: '/admin/content', icon: FileText },
+    { name: 'Hosting Plans', href: '/admin/hosting-plans', icon: Settings },
+    { name: 'Features', href: '/admin/features', icon: Settings },
     { name: 'SEO Settings', href: '/admin/seo', icon: Settings },
   ];
 
@@ -47,7 +44,7 @@ const AdminLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex">
       {/* Mobile sidebar backdrop */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -64,12 +61,76 @@ const AdminLayout = () => {
       </AnimatePresence>
 
       {/* Sidebar */}
+      <div className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0">
+        <div className="flex flex-col flex-grow bg-white shadow-lg">
+          <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">HW</span>
+              </div>
+              <span className="ml-2 text-xl font-semibold text-gray-900">HostWP Admin</span>
+            </div>
+          </div>
+
+          <nav className="mt-6 px-3 flex-1">
+            <div className="space-y-1">
+              {navigation.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                      isActive(item.href)
+                        ? 'bg-primary-100 text-primary-700'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    <Icon
+                      className={`mr-3 h-5 w-5 ${
+                        isActive(item.href)
+                          ? 'text-primary-500'
+                          : 'text-gray-400 group-hover:text-gray-500'
+                      }`}
+                    />
+                    {item.name}
+                  </Link>
+                );
+              })}
+            </div>
+          </nav>
+
+          {/* User info at bottom */}
+          <div className="p-4 border-t border-gray-200">
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                <User className="w-4 h-4 text-gray-600" />
+              </div>
+              <div className="ml-3 flex-1">
+                <p className="text-sm font-medium text-gray-700">
+                  {user?.email || 'Admin User'}
+                </p>
+                <p className="text-xs text-gray-500">Administrator</p>
+              </div>
+              <button
+                onClick={handleSignOut}
+                className="p-1 text-gray-400 hover:text-gray-500"
+                title="Sign out"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile sidebar */}
       <motion.div
         initial={false}
         animate={{
           x: sidebarOpen ? 0 : '-100%'
         }}
-        className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg lg:translate-x-0 lg:static lg:inset-0"
+        className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg lg:hidden"
       >
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
           <div className="flex items-center">
@@ -80,7 +141,7 @@ const AdminLayout = () => {
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden p-1 rounded-md text-gray-400 hover:text-gray-500"
+            className="p-1 rounded-md text-gray-400 hover:text-gray-500"
           >
             <X className="w-6 h-6" />
           </button>
@@ -139,7 +200,7 @@ const AdminLayout = () => {
       </motion.div>
 
       {/* Main content */}
-      <div className="lg:pl-64">
+      <div className="lg:pl-64 flex-1">
         {/* Top bar */}
         <div className="sticky top-0 z-10 bg-white shadow-sm border-b border-gray-200">
           <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
@@ -182,7 +243,7 @@ const AdminLayout = () => {
                   <User className="w-4 h-4 text-primary-600" />
                 </div>
                 <span className="hidden md:block text-sm font-medium text-gray-700">
-                  {user?.email?.split('@')[0] || 'Admin'}
+                  {user?.email?.split('@')[0] || 'admin'}
                 </span>
               </div>
             </div>

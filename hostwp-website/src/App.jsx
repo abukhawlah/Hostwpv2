@@ -2,6 +2,11 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import { trackPageView } from './utils/analytics';
+import AdminDashboard from './components/admin/AdminDashboard';
+import ContentManager from './components/admin/ContentManager';
+import HostingPlansManager from './components/admin/HostingPlansManager';
+import FeaturesManager from './components/admin/FeaturesManager';
+import SEOManager from './components/admin/SEOManager';
 
 // Lazy load pages for better performance
 const Home = lazy(() => import('./pages/Home'));
@@ -23,8 +28,6 @@ const SupabaseExample = lazy(() => import('./components/examples/SupabaseExample
 // Admin Components
 const AdminLogin = lazy(() => import('./components/admin/AdminLogin'));
 const AdminLayout = lazy(() => import('./components/admin/AdminLayout'));
-const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard'));
-const ServicesManager = lazy(() => import('./components/admin/ServicesManager'));
 const ProtectedRoute = lazy(() => import('./components/admin/ProtectedRoute'));
 
 // Loading component
@@ -62,7 +65,7 @@ function App() {
     <Router>
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          {/* Admin Routes - Outside of main layout */}
+          {/* Admin Routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={
             <ProtectedRoute>
@@ -70,13 +73,10 @@ function App() {
             </ProtectedRoute>
           }>
             <Route index element={<AdminDashboard />} />
-            <Route path="services" element={<ServicesManager />} />
-            <Route path="projects" element={<div className="p-8 text-center text-gray-500">Projects Manager - Coming Soon</div>} />
-            <Route path="case-studies" element={<div className="p-8 text-center text-gray-500">Case Studies Manager - Coming Soon</div>} />
-            <Route path="team" element={<div className="p-8 text-center text-gray-500">Team Manager - Coming Soon</div>} />
-            <Route path="images" element={<div className="p-8 text-center text-gray-500">Image Manager - Coming Soon</div>} />
-            <Route path="products" element={<div className="p-8 text-center text-gray-500">Products Manager - Coming Soon</div>} />
-            <Route path="seo" element={<div className="p-8 text-center text-gray-500">SEO Settings - Coming Soon</div>} />
+            <Route path="content" element={<ContentManager />} />
+            <Route path="hosting-plans" element={<HostingPlansManager />} />
+            <Route path="features" element={<FeaturesManager />} />
+            <Route path="seo" element={<SEOManager />} />
           </Route>
 
           {/* Public Routes - With main layout */}

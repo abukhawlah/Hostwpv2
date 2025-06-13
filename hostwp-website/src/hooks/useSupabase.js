@@ -107,45 +107,49 @@ export const useSupabaseSubscription = (table, callback, filter = null) => {
 
 // Hook for authentication
 export const useAuth = () => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    // Check for demo user first
+  const [user, setUser] = useState(() => {
+    // Initialize user from localStorage if available
     const demoUser = localStorage.getItem('demo_user');
     const demoAdmin = localStorage.getItem('demo_admin');
-    
     if (demoUser && demoAdmin) {
-      setUser(JSON.parse(demoUser));
-      setIsAdmin(true);
-      setLoading(false);
-      return;
+      console.log('useAuth - Initializing with demo user from localStorage');
+      return JSON.parse(demoUser);
     }
+    return null;
+  });
+  
+  const [loading, setLoading] = useState(() => {
+    // If we have demo user, we're not loading
+    const demoUser = localStorage.getItem('demo_user');
+    const demoAdmin = localStorage.getItem('demo_admin');
+    return !(demoUser && demoAdmin);
+  });
+  
+  const [isAdmin, setIsAdmin] = useState(() => {
+    // Initialize admin status from localStorage if available
+    const demoAdmin = localStorage.getItem('demo_admin');
+    return !!demoAdmin;
+  });
 
-    // Get initial session from Supabase
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        // Check if user is admin
-        const { data: adminUser } = await supabase
-          .from('admin_users')
-          .select('*')
-          .eq('email', session.user.email)
-          .single();
+  useEffect(() => {
+    let isMounted = true;
+    
+    const initializeAuth = async () => {
+      try {
+        // Check for demo user first
+        const demoUser = localStorage.getItem('demo_user');
+        const demoAdmin = localStorage.getItem('demo_admin');
         
-        setIsAdmin(!!adminUser);
-        setUser(session.user);
-      } else {
-        setUser(null);
-        setIsAdmin(false);
-      }
-      setLoading(false);
-    });
+        console.log('Auth initialization - demo user:', demoUser, 'demo admin:', demoAdmin);
+        
+        if (demoUser && demoAdmin) {
+          console.log('Demo user already set from localStorage, skipping initialization');
+          return; // Skip Supabase initialization if demo user exists
+        }
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (session?.user) {
+        // Get initial session from Supabase only if no demo user
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user && isMounted) {
           // Check if user is admin
           const { data: adminUser } = await supabase
             .from('admin_users')
@@ -155,15 +159,61 @@ export const useAuth = () => {
           
           setIsAdmin(!!adminUser);
           setUser(session.user);
-        } else {
+        } else if (isMounted) {
           setUser(null);
           setIsAdmin(false);
         }
-        setLoading(false);
+        
+        if (isMounted) {
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    initializeAuth();
+
+    // Listen for auth changes (only for Supabase, not demo user)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event, session);
+        
+        // Don't override demo user
+        const demoUser = localStorage.getItem('demo_user');
+        if (demoUser) {
+          console.log('Demo user exists, ignoring Supabase auth change');
+          return;
+        }
+        
+        if (session?.user && isMounted) {
+          // Check if user is admin
+          const { data: adminUser } = await supabase
+            .from('admin_users')
+            .select('*')
+            .eq('email', session.user.email)
+            .single();
+          
+          setIsAdmin(!!adminUser);
+          setUser(session.user);
+        } else if (isMounted) {
+          setUser(null);
+          setIsAdmin(false);
+        }
+        
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email, password) => {
@@ -181,6 +231,7 @@ export const useAuth = () => {
       localStorage.setItem('demo_user', JSON.stringify(demoUser));
       localStorage.setItem('demo_admin', 'true');
       
+      console.log('signIn - Setting demo user and auth state');
       setUser(demoUser);
       setIsAdmin(true);
       setLoading(false);
@@ -249,6 +300,9 @@ export const useAuth = () => {
     const { data, error } = await supabase.auth.resetPasswordForEmail(email);
     return { data, error };
   };
+
+  // Debug logging for auth state
+  console.log('useAuth - returning state:', { user: !!user, loading, isAdmin });
 
   return {
     user,
