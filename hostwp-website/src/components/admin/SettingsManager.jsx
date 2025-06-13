@@ -39,6 +39,14 @@ const SettingsManager = () => {
     fetchSettings();
   }, []);
 
+  useEffect(() => {
+    // Initialize favicon state based on current settings
+    updateFaviconInDocument(settings.favicon_enabled, settings.favicon_url);
+    
+    // Set document title
+    document.title = settings.site_title || 'HostWP - Premium Web Hosting Services';
+  }, [settings.favicon_enabled, settings.favicon_url, settings.site_title]);
+
   const fetchSettings = async () => {
     try {
       setLoading(true);
@@ -46,9 +54,9 @@ const SettingsManager = () => {
       // For now, just use local state as we don't have the database table set up
       // In a real implementation, you would fetch from supabase
       setSettings({
-        favicon_enabled: true,
+        favicon_enabled: false, // Disabled by default since no favicon is uploaded
         favicon_url: null,
-        site_title: 'HostWP',
+        site_title: 'HostWP - Premium Web Hosting Services',
         site_description: 'Professional WordPress Hosting Solutions',
         meta_keywords: 'wordpress hosting, web hosting, domain registration',
         contact_email: 'support@hostwp.com',
@@ -111,6 +119,9 @@ const SettingsManager = () => {
 
       // Update favicon in document head
       updateFaviconInDocument(settings.favicon_enabled, faviconPreview || settings.favicon_url);
+
+      // Update document title
+      document.title = settings.site_title || 'HostWP - Premium Web Hosting Services';
 
       setFaviconFile(null);
       setMessage({ type: 'success', text: 'Settings saved successfully!' });
