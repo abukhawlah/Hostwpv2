@@ -112,7 +112,18 @@ export const useAuth = () => {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    // Get initial session
+    // Check for demo user first
+    const demoUser = localStorage.getItem('demo_user');
+    const demoAdmin = localStorage.getItem('demo_admin');
+    
+    if (demoUser && demoAdmin) {
+      setUser(JSON.parse(demoUser));
+      setIsAdmin(true);
+      setLoading(false);
+      return;
+    }
+
+    // Get initial session from Supabase
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         // Check if user is admin
@@ -166,6 +177,10 @@ export const useAuth = () => {
         created_at: new Date().toISOString()
       };
       
+      // Store demo user in localStorage for persistence
+      localStorage.setItem('demo_user', JSON.stringify(demoUser));
+      localStorage.setItem('demo_admin', 'true');
+      
       setUser(demoUser);
       setIsAdmin(true);
       setLoading(false);
@@ -211,6 +226,10 @@ export const useAuth = () => {
   };
 
   const signOut = async () => {
+    // Clear demo user data
+    localStorage.removeItem('demo_user');
+    localStorage.removeItem('demo_admin');
+    
     // Handle demo user
     if (user?.id === 'demo-admin-id') {
       setUser(null);
