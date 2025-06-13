@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Settings,
@@ -14,64 +14,20 @@ import {
   CheckCircle,
   RefreshCw
 } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { useSiteSettings } from '../../hooks/useSiteSettings.jsx';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 
 const SettingsManager = () => {
-  const [settings, setSettings] = useState({
-    favicon_enabled: true,
-    favicon_url: null,
-    site_title: 'HostWP',
-    site_description: 'Professional WordPress Hosting Solutions',
-    meta_keywords: 'wordpress hosting, web hosting, domain registration',
-    contact_email: 'support@hostwp.com',
-    support_phone: '1-800-HOST-WP'
-  });
-  const [loading, setLoading] = useState(true);
+  const { settings, updateSettings, loading } = useSiteSettings();
   const [saving, setSaving] = useState(false);
   const [uploadingFavicon, setUploadingFavicon] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [faviconFile, setFaviconFile] = useState(null);
   const [faviconPreview, setFaviconPreview] = useState(null);
 
-  useEffect(() => {
-    fetchSettings();
-  }, []);
-
-  useEffect(() => {
-    // Initialize favicon state based on current settings
-    updateFaviconInDocument(settings.favicon_enabled, settings.favicon_url);
-    
-    // Set document title
-    document.title = settings.site_title || 'HostWP - Premium Web Hosting Services';
-  }, [settings.favicon_enabled, settings.favicon_url, settings.site_title]);
-
-  const fetchSettings = async () => {
-    try {
-      setLoading(true);
-      
-      // For now, just use local state as we don't have the database table set up
-      // In a real implementation, you would fetch from supabase
-      setSettings({
-        favicon_enabled: false, // Disabled by default since no favicon is uploaded
-        favicon_url: null,
-        site_title: 'HostWP - Premium Web Hosting Services',
-        site_description: 'Professional WordPress Hosting Solutions',
-        meta_keywords: 'wordpress hosting, web hosting, domain registration',
-        contact_email: 'support@hostwp.com',
-        support_phone: '1-800-HOST-WP'
-      });
-    } catch (error) {
-      console.error('Error fetching settings:', error);
-      setMessage({ type: 'error', text: 'Failed to load settings' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleInputChange = (field, value) => {
-    setSettings(prev => ({ ...prev, [field]: value }));
+    updateSettings({ [field]: value });
   };
 
   const handleFaviconUpload = (event) => {
@@ -105,8 +61,8 @@ const SettingsManager = () => {
   const removeFavicon = () => {
     setFaviconFile(null);
     setFaviconPreview(null);
-    setSettings(prev => ({ ...prev, favicon_url: null }));
-    setMessage({ type: 'info', text: 'Favicon removed. Save to apply changes.' });
+    updateSettings({ favicon_url: null, favicon_enabled: false });
+    setMessage({ type: 'info', text: 'Favicon removed and disabled.' });
   };
 
   const saveSettings = async () => {
@@ -114,43 +70,28 @@ const SettingsManager = () => {
       setSaving(true);
       setMessage({ type: '', text: '' });
 
-      // Simulate saving - in real implementation, save to database
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // If there's a new favicon file, convert it to data URL and save
+      if (faviconFile && faviconPreview) {
+        updateSettings({ 
+          favicon_url: faviconPreview,
+          favicon_enabled: true 
+        });
+      }
 
-      // Update favicon in document head
-      updateFaviconInDocument(settings.favicon_enabled, faviconPreview || settings.favicon_url);
-
-      // Update document title
-      document.title = settings.site_title || 'HostWP - Premium Web Hosting Services';
+      // Simulate saving delay for UX
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       setFaviconFile(null);
+      setFaviconPreview(null);
       setMessage({ type: 'success', text: 'Settings saved successfully!' });
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
     } catch (error) {
       console.error('Error saving settings:', error);
       setMessage({ type: 'error', text: 'Failed to save settings' });
     } finally {
       setSaving(false);
-    }
-  };
-
-  const updateFaviconInDocument = (enabled, url) => {
-    // Remove existing favicon links
-    const existingFavicons = document.querySelectorAll('link[rel*="icon"]');
-    existingFavicons.forEach(link => link.remove());
-
-    if (enabled && url) {
-      // Add new favicon link
-      const link = document.createElement('link');
-      link.rel = 'icon';
-      link.type = 'image/x-icon';
-      link.href = url;
-      document.head.appendChild(link);
-    } else if (!enabled) {
-      // Add empty data URL to disable favicon
-      const link = document.createElement('link');
-      link.rel = 'icon';
-      link.href = 'data:,';
-      document.head.appendChild(link);
     }
   };
 
@@ -181,6 +122,23 @@ const SettingsManager = () => {
           <h1 className="text-2xl font-bold text-gray-900">Site Settings</h1>
           <p className="text-gray-600">Manage your website configuration and branding</p>
         </div>
+        <Button 
+          onClick={saveSettings}
+          disabled={saving}
+          className="bg-primary-600 hover:bg-primary-700"
+        >
+          {saving ? (
+            <>
+              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="w-4 h-4 mr-2" />
+              Save Changes
+            </>
+          )}
+        </Button>
       </div>
 
       {/* Message */}
@@ -300,7 +258,8 @@ const SettingsManager = () => {
           <h2 className="text-lg font-semibold text-gray-900">General Settings</h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-6">
+          {/* Site Title */}
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-2">
               Site Title
@@ -309,11 +268,49 @@ const SettingsManager = () => {
               type="text"
               value={settings.site_title}
               onChange={(e) => handleInputChange('site_title', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              placeholder="Your site title"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+              placeholder="Enter site title"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              This appears in browser tabs and search engine results
+            </p>
           </div>
 
+          {/* Site Description */}
+          <div>
+            <label className="block text-sm font-medium text-gray-900 mb-2">
+              Site Description
+            </label>
+            <textarea
+              value={settings.site_description}
+              onChange={(e) => handleInputChange('site_description', e.target.value)}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+              placeholder="Enter site description"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Used in meta descriptions for SEO
+            </p>
+          </div>
+
+          {/* Meta Keywords */}
+          <div>
+            <label className="block text-sm font-medium text-gray-900 mb-2">
+              Meta Keywords
+            </label>
+            <input
+              type="text"
+              value={settings.meta_keywords}
+              onChange={(e) => handleInputChange('meta_keywords', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+              placeholder="Enter keywords separated by commas"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Comma-separated keywords for SEO
+            </p>
+          </div>
+
+          {/* Contact Email */}
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-2">
               Contact Email
@@ -322,70 +319,26 @@ const SettingsManager = () => {
               type="email"
               value={settings.contact_email}
               onChange={(e) => handleInputChange('contact_email', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              placeholder="contact@yoursite.com"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+              placeholder="Enter contact email"
             />
           </div>
 
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Site Description
-            </label>
-            <textarea
-              value={settings.site_description}
-              onChange={(e) => handleInputChange('site_description', e.target.value)}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              placeholder="Brief description of your website"
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Meta Keywords
-            </label>
-            <input
-              type="text"
-              value={settings.meta_keywords}
-              onChange={(e) => handleInputChange('meta_keywords', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              placeholder="keyword1, keyword2, keyword3"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Separate keywords with commas
-            </p>
-          </div>
-
+          {/* Support Phone */}
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-2">
               Support Phone
             </label>
             <input
-              type="text"
+              type="tel"
               value={settings.support_phone}
               onChange={(e) => handleInputChange('support_phone', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              placeholder="1-800-SUPPORT"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+              placeholder="Enter support phone number"
             />
           </div>
         </div>
       </Card>
-
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <Button
-          onClick={saveSettings}
-          disabled={saving || uploadingFavicon}
-          className="flex items-center"
-        >
-          {(saving || uploadingFavicon) ? (
-            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-          ) : (
-            <Save className="w-4 h-4 mr-2" />
-          )}
-          {saving ? 'Saving...' : uploadingFavicon ? 'Uploading...' : 'Save Settings'}
-        </Button>
-      </div>
     </div>
   );
 };

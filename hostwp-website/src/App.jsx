@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import { trackPageView } from './utils/analytics';
+import { SiteSettingsProvider } from './hooks/useSiteSettings.jsx';
 import AdminDashboard from './components/admin/AdminDashboard';
 import ContentManager from './components/admin/ContentManager';
 import HostingPlansManager from './components/admin/HostingPlansManager';
@@ -63,53 +64,55 @@ const NotFound = () => (
 
 function App() {
   return (
-    <Router>
-      <Suspense fallback={<PageLoader />}>
-        <Routes>
-          {/* Admin Routes */}
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin" element={
-            <ProtectedRoute>
-              <AdminLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<AdminDashboard />} />
-            <Route path="content" element={<ContentManager />} />
-            <Route path="hosting-plans" element={<HostingPlansManager />} />
-            <Route path="features" element={<FeaturesManager />} />
-            <Route path="seo" element={<SEOManager />} />
-            <Route path="settings" element={<SettingsManager />} />
-          </Route>
+    <SiteSettingsProvider>
+      <Router>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            {/* Admin Routes */}
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin" element={
+              <ProtectedRoute>
+                <AdminLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<AdminDashboard />} />
+              <Route path="content" element={<ContentManager />} />
+              <Route path="hosting-plans" element={<HostingPlansManager />} />
+              <Route path="features" element={<FeaturesManager />} />
+              <Route path="seo" element={<SEOManager />} />
+              <Route path="settings" element={<SettingsManager />} />
+            </Route>
 
-          {/* Public Routes - With main layout */}
-          <Route path="/*" element={
-            <Layout>
-              <Routes>
-                {/* Main pages */}
-                <Route path="/" element={<Home />} />
-                <Route path="/products" element={<Products />} />
-                <Route path="/our-story" element={<OurStory />} />
-                <Route path="/domains" element={<Domains />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/white-glove-support" element={<WhiteGloveSupport />} />
-                
-                {/* Legal pages */}
-                <Route path="/terms" element={<Terms />} />
-                <Route path="/privacy" element={<Privacy />} />
-                <Route path="/faq" element={<FAQ />} />
-                <Route path="/aup" element={<AUP />} />
-                
-                {/* Example pages */}
-                <Route path="/supabase-example" element={<SupabaseExample />} />
-                
-                {/* 404 catch-all */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Layout>
-          } />
-        </Routes>
-      </Suspense>
-    </Router>
+            {/* Public Routes - With main layout */}
+            <Route path="/*" element={
+              <Layout>
+                <Routes>
+                  {/* Main pages */}
+                  <Route path="/" element={<Home />} />
+                  <Route path="/products" element={<Products />} />
+                  <Route path="/our-story" element={<OurStory />} />
+                  <Route path="/domains" element={<Domains />} />
+                  <Route path="/contact" element={<Contact />} />
+                  <Route path="/white-glove-support" element={<WhiteGloveSupport />} />
+                  
+                  {/* Legal pages */}
+                  <Route path="/terms" element={<Terms />} />
+                  <Route path="/privacy" element={<Privacy />} />
+                  <Route path="/faq" element={<FAQ />} />
+                  <Route path="/aup" element={<AUP />} />
+                  
+                  {/* Example pages */}
+                  <Route path="/supabase-example" element={<SupabaseExample />} />
+                  
+                  {/* 404 catch-all */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Layout>
+            } />
+          </Routes>
+        </Suspense>
+      </Router>
+    </SiteSettingsProvider>
   );
 }
 
