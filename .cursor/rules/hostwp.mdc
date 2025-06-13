@@ -1,5 +1,6 @@
 ---
-description:
-globs:
+description: 
+globs: 
 alwaysApply: false
 ---
+Always deploy on Vercel and never deploy on a local dev environment. 
