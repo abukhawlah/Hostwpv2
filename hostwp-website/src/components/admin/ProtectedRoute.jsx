@@ -10,16 +10,18 @@ const ProtectedRoute = ({ children }) => {
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    // Give a moment for auth to initialize
+    // Give more time for auth to initialize, especially for demo user
     const timer = setTimeout(() => {
       setIsChecking(false);
-    }, 1000);
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, []);
 
   // Debug logging
   console.log('ProtectedRoute - user:', user, 'loading:', loading, 'isChecking:', isChecking);
+  console.log('localStorage demo_user:', localStorage.getItem('demo_user'));
+  console.log('localStorage demo_admin:', localStorage.getItem('demo_admin'));
 
   // Show loading spinner while checking authentication
   if (loading || isChecking) {

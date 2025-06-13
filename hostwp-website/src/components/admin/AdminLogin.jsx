@@ -42,7 +42,8 @@ const AdminLogin = () => {
         setError(error.message);
       } else {
         console.log('Login successful, navigating to /admin'); // Debug log
-        navigate('/admin');
+        // Force a page reload to ensure auth state is picked up
+        window.location.href = '/admin';
       }
     } catch (err) {
       console.error('Unexpected login error:', err); // Debug log
