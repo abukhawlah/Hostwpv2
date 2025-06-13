@@ -1,0 +1,6 @@
+{
+  "buildCommand": "cd hostwp-website && npm ci && npm run build",
+  "outputDirectory": "hostwp-website/dist",
+  "installCommand": "cd hostwp-website && npm ci",
+  "devCommand": "cd hostwp-website && npm run dev"
+} 
