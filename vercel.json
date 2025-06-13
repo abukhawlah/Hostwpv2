@@ -1,6 +1,21 @@
 {
-  "buildCommand": "cd hostwp-website && npm ci && npm run build",
-  "outputDirectory": "hostwp-website/dist",
-  "installCommand": "cd hostwp-website && npm ci",
-  "devCommand": "cd hostwp-website && npm run dev"
+  "version": 2,
+  "builds": [
+    {
+      "src": "hostwp-website/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
 } 
