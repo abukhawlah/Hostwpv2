@@ -7,6 +7,7 @@ import ContentManager from './components/admin/ContentManager';
 import HostingPlansManager from './components/admin/HostingPlansManager';
 import FeaturesManager from './components/admin/FeaturesManager';
 import SEOManager from './components/admin/SEOManager';
+import SettingsManager from './components/admin/SettingsManager';
 
 // Lazy load pages for better performance
 const Home = lazy(() => import('./pages/Home'));
@@ -77,6 +78,7 @@ function App() {
             <Route path="hosting-plans" element={<HostingPlansManager />} />
             <Route path="features" element={<FeaturesManager />} />
             <Route path="seo" element={<SEOManager />} />
+            <Route path="settings" element={<SettingsManager />} />
           </Route>
 
           {/* Public Routes - With main layout */}

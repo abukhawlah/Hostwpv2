@@ -169,6 +169,13 @@ const AdminDashboard = () => {
       icon: TrendingUp,
       link: '/admin/seo',
       color: 'bg-orange-500'
+    },
+    {
+      title: 'Site Settings',
+      description: 'Manage favicon and general settings',
+      icon: Settings,
+      link: '/admin/settings',
+      color: 'bg-gray-500'
     }
   ];
 

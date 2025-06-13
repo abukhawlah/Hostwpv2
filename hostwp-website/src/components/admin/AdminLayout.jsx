@@ -13,7 +13,11 @@ import {
   LogOut,
   User,
   Bell,
-  Search
+  Search,
+  Globe,
+  TrendingUp,
+  CheckCircle,
+  Server
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useSupabase';
 
@@ -26,9 +30,10 @@ const AdminLayout = () => {
   const navigation = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
     { name: 'Website Content', href: '/admin/content', icon: FileText },
-    { name: 'Hosting Plans', href: '/admin/hosting-plans', icon: Settings },
-    { name: 'Features', href: '/admin/features', icon: Settings },
-    { name: 'SEO Settings', href: '/admin/seo', icon: Settings },
+    { name: 'Hosting Plans', href: '/admin/hosting-plans', icon: Server },
+    { name: 'Features', href: '/admin/features', icon: CheckCircle },
+    { name: 'SEO Settings', href: '/admin/seo', icon: TrendingUp },
+    { name: 'Site Settings', href: '/admin/settings', icon: Settings },
   ];
 
   const handleSignOut = async () => {
