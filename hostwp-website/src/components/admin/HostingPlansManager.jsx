@@ -15,18 +15,44 @@ import {
   DollarSign,
   Star,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  RefreshCw,
+  Upload,
+  Download,
+  Sync,
+  ExternalLink,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
+import { useActiveApiConfig } from '../../hooks/useActiveApiConfig';
+import { 
+  getProducts, 
+  createProduct, 
+  updateProduct, 
+  deleteProduct 
+} from '../../services/upmind';
 
 const HostingPlansManager = () => {
+  // API Configuration
+  const { activeConfig, isValid: isApiConfigValid } = useActiveApiConfig();
+  
+  // Core state
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingPlan, setEditingPlan] = useState(null);
+  
+  // Upmind sync state
+  const [syncStatus, setSyncStatus] = useState('idle'); // idle, syncing, success, error
+  const [syncMessage, setSyncMessage] = useState('');
+  const [upmindProducts, setUpmindProducts] = useState([]);
+  const [showSyncModal, setShowSyncModal] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState(null);
+  
   const [formData, setFormData] = useState({
     name: '',
     slug: '',
@@ -38,7 +64,9 @@ const HostingPlansManager = () => {
     is_popular: false,
     is_active: true,
     sort_order: 1,
-    upmind_url: ''
+    upmind_url: '',
+    upmind_product_id: '',
+    sync_with_upmind: false
   });
 
   useEffect(() => {
@@ -76,7 +104,9 @@ const HostingPlansManager = () => {
       is_popular: plan.is_popular || false,
       is_active: plan.is_active !== false,
       sort_order: plan.sort_order || 1,
-      upmind_url: plan.upmind_url || ''
+      upmind_url: plan.upmind_url || '',
+      upmind_product_id: plan.upmind_product_id || '',
+      sync_with_upmind: plan.sync_with_upmind || false
     });
     setShowModal(true);
   };
@@ -196,6 +226,295 @@ const HostingPlansManager = () => {
     }
   };
 
+  // Upmind Sync Functions
+  const fetchUpmindProducts = async () => {
+    if (!isApiConfigValid) {
+      setSyncMessage('API configuration required');
+      return [];
+    }
+
+    try {
+      setSyncStatus('syncing');
+      setSyncMessage('Fetching products from Upmind...');
+      
+      const response = await getProducts();
+      if (response.success) {
+        setUpmindProducts(response.data);
+        setSyncMessage(`Found ${response.data.length} products in Upmind`);
+        return response.data;
+      } else {
+        throw new Error(response.error || 'Failed to fetch products');
+      }
+    } catch (error) {
+      console.error('Error fetching Upmind products:', error);
+      setSyncStatus('error');
+      setSyncMessage(`Error fetching products: ${error.message}`);
+      return [];
+    }
+  };
+
+  const syncPlanToUpmind = async (plan) => {
+    if (!isApiConfigValid) {
+      throw new Error('API configuration required');
+    }
+
+    try {
+      const upmindProductData = {
+        name: plan.name,
+        description: plan.description,
+        price: parseFloat(plan.price),
+        billing_cycle: plan.period,
+        features: Array.isArray(plan.features) ? plan.features : [],
+        status: plan.is_active ? 'active' : 'inactive',
+        metadata: {
+          hostwp_plan_id: plan.id,
+          icon_emoji: plan.icon_emoji,
+          is_popular: plan.is_popular,
+          sort_order: plan.sort_order
+        }
+      };
+
+      let response;
+      if (plan.upmind_product_id) {
+        // Update existing product
+        response = await updateProduct(plan.upmind_product_id, upmindProductData);
+      } else {
+        // Create new product
+        response = await createProduct(upmindProductData);
+      }
+
+      if (response.success) {
+        // Update local plan with Upmind product ID
+        if (!plan.upmind_product_id && response.data.id) {
+          await supabase
+            .from('hosting_plans')
+            .update({ 
+              upmind_product_id: response.data.id,
+              sync_with_upmind: true,
+              last_synced_at: new Date().toISOString()
+            })
+            .eq('id', plan.id);
+        }
+        return response.data;
+      } else {
+        throw new Error(response.error || 'Failed to sync to Upmind');
+      }
+    } catch (error) {
+      console.error('Error syncing plan to Upmind:', error);
+      throw error;
+    }
+  };
+
+  const syncPlanFromUpmind = async (upmindProduct, localPlan = null) => {
+    try {
+      const planData = {
+        name: upmindProduct.name,
+        description: upmindProduct.description || '',
+        price: upmindProduct.price?.toString() || '0',
+        period: upmindProduct.billing_cycle || 'month',
+        features: upmindProduct.features || [],
+        is_active: upmindProduct.status === 'active',
+        upmind_product_id: upmindProduct.id,
+        sync_with_upmind: true,
+        last_synced_at: new Date().toISOString(),
+        // Preserve local-only fields
+        icon_emoji: localPlan?.icon_emoji || '🚀',
+        is_popular: localPlan?.is_popular || false,
+        sort_order: localPlan?.sort_order || plans.length + 1,
+        slug: localPlan?.slug || upmindProduct.name.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '')
+      };
+
+      let error;
+      if (localPlan) {
+        // Update existing plan
+        const { error: updateError } = await supabase
+          .from('hosting_plans')
+          .update(planData)
+          .eq('id', localPlan.id);
+        error = updateError;
+      } else {
+        // Create new plan
+        const { error: insertError } = await supabase
+          .from('hosting_plans')
+          .insert([planData]);
+        error = insertError;
+      }
+
+      if (error) throw error;
+      return planData;
+    } catch (error) {
+      console.error('Error syncing plan from Upmind:', error);
+      throw error;
+    }
+  };
+
+  const handleSyncAllToUpmind = async () => {
+    if (!isApiConfigValid) {
+      alert('Please configure your Upmind API credentials in Settings first');
+      return;
+    }
+
+    setSyncStatus('syncing');
+    setSyncMessage('Syncing all plans to Upmind...');
+    
+    let successCount = 0;
+    let errorCount = 0;
+    const errors = [];
+
+    try {
+      for (const plan of plans) {
+        try {
+          await syncPlanToUpmind(plan);
+          successCount++;
+          setSyncMessage(`Synced ${successCount}/${plans.length} plans to Upmind...`);
+        } catch (error) {
+          errorCount++;
+          errors.push(`${plan.name}: ${error.message}`);
+        }
+      }
+
+      setSyncStatus(errorCount === 0 ? 'success' : 'error');
+      setSyncMessage(
+        errorCount === 0 
+          ? `Successfully synced ${successCount} plans to Upmind`
+          : `Synced ${successCount} plans, ${errorCount} failed. Errors: ${errors.join(', ')}`
+      );
+      setLastSyncTime(new Date());
+      
+      // Refresh plans to show updated sync status
+      fetchPlans();
+    } catch (error) {
+      setSyncStatus('error');
+      setSyncMessage(`Sync failed: ${error.message}`);
+    }
+  };
+
+  const handleSyncAllFromUpmind = async () => {
+    if (!isApiConfigValid) {
+      alert('Please configure your Upmind API credentials in Settings first');
+      return;
+    }
+
+    setSyncStatus('syncing');
+    setSyncMessage('Fetching plans from Upmind...');
+
+    try {
+      const upmindProducts = await fetchUpmindProducts();
+      if (upmindProducts.length === 0) {
+        setSyncStatus('error');
+        setSyncMessage('No products found in Upmind');
+        return;
+      }
+
+      setSyncMessage('Syncing plans from Upmind...');
+      let successCount = 0;
+      let errorCount = 0;
+      const errors = [];
+
+      for (const product of upmindProducts) {
+        try {
+          // Find matching local plan
+          const localPlan = plans.find(p => p.upmind_product_id === product.id);
+          await syncPlanFromUpmind(product, localPlan);
+          successCount++;
+          setSyncMessage(`Synced ${successCount}/${upmindProducts.length} plans from Upmind...`);
+        } catch (error) {
+          errorCount++;
+          errors.push(`${product.name}: ${error.message}`);
+        }
+      }
+
+      setSyncStatus(errorCount === 0 ? 'success' : 'error');
+      setSyncMessage(
+        errorCount === 0 
+          ? `Successfully synced ${successCount} plans from Upmind`
+          : `Synced ${successCount} plans, ${errorCount} failed. Errors: ${errors.join(', ')}`
+      );
+      setLastSyncTime(new Date());
+      
+      // Refresh plans to show new data
+      fetchPlans();
+    } catch (error) {
+      setSyncStatus('error');
+      setSyncMessage(`Sync failed: ${error.message}`);
+    }
+  };
+
+  const handleSyncSinglePlan = async (plan, direction = 'to') => {
+    if (!isApiConfigValid) {
+      alert('Please configure your Upmind API credentials in Settings first');
+      return;
+    }
+
+    setSyncStatus('syncing');
+    
+    try {
+      if (direction === 'to') {
+        setSyncMessage(`Syncing "${plan.name}" to Upmind...`);
+        await syncPlanToUpmind(plan);
+        setSyncMessage(`Successfully synced "${plan.name}" to Upmind`);
+      } else {
+        if (!plan.upmind_product_id) {
+          throw new Error('No Upmind product ID found for this plan');
+        }
+        setSyncMessage(`Syncing "${plan.name}" from Upmind...`);
+        // Fetch the specific product from Upmind
+        const products = await fetchUpmindProducts();
+        const upmindProduct = products.find(p => p.id === plan.upmind_product_id);
+        if (!upmindProduct) {
+          throw new Error('Product not found in Upmind');
+        }
+        await syncPlanFromUpmind(upmindProduct, plan);
+        setSyncMessage(`Successfully synced "${plan.name}" from Upmind`);
+      }
+      
+      setSyncStatus('success');
+      setLastSyncTime(new Date());
+      fetchPlans();
+    } catch (error) {
+      setSyncStatus('error');
+      setSyncMessage(`Sync failed: ${error.message}`);
+    }
+  };
+
+  const handleDeleteFromUpmind = async (plan) => {
+    if (!plan.upmind_product_id) {
+      alert('This plan is not synced with Upmind');
+      return;
+    }
+
+    if (!confirm(`Delete "${plan.name}" from Upmind? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setSyncStatus('syncing');
+      setSyncMessage(`Deleting "${plan.name}" from Upmind...`);
+      
+      const response = await deleteProduct(plan.upmind_product_id);
+      if (response.success) {
+        // Update local plan to remove Upmind reference
+        await supabase
+          .from('hosting_plans')
+          .update({ 
+            upmind_product_id: null,
+            sync_with_upmind: false,
+            last_synced_at: null
+          })
+          .eq('id', plan.id);
+        
+        setSyncStatus('success');
+        setSyncMessage(`Successfully deleted "${plan.name}" from Upmind`);
+        fetchPlans();
+      } else {
+        throw new Error(response.error || 'Failed to delete from Upmind');
+      }
+    } catch (error) {
+      setSyncStatus('error');
+      setSyncMessage(`Delete failed: ${error.message}`);
+    }
+  };
+
   const filteredPlans = plans.filter(plan =>
     plan.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     plan.description.toLowerCase().includes(searchTerm.toLowerCase())
@@ -233,6 +552,90 @@ const HostingPlansManager = () => {
           Add Plan
         </Button>
       </div>
+
+      {/* Upmind Sync Toolbar */}
+      <Card className="p-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              {isApiConfigValid ? (
+                <Wifi className="w-5 h-5 text-green-500" />
+              ) : (
+                <WifiOff className="w-5 h-5 text-red-500" />
+              )}
+              <span className={`text-sm font-medium ${isApiConfigValid ? 'text-green-700' : 'text-red-700'}`}>
+                {isApiConfigValid ? 'Upmind Connected' : 'Upmind Disconnected'}
+              </span>
+            </div>
+            {lastSyncTime && (
+              <span className="text-sm text-gray-500">
+                Last sync: {lastSyncTime.toLocaleString()}
+              </span>
+            )}
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSyncAllFromUpmind}
+              disabled={!isApiConfigValid || syncStatus === 'syncing'}
+              className="flex items-center"
+            >
+              {syncStatus === 'syncing' ? (
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4 mr-2" />
+              )}
+              Pull from Upmind
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSyncAllToUpmind}
+              disabled={!isApiConfigValid || syncStatus === 'syncing'}
+              className="flex items-center"
+            >
+              {syncStatus === 'syncing' ? (
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Upload className="w-4 h-4 mr-2" />
+              )}
+              Push to Upmind
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSyncModal(true)}
+              disabled={!isApiConfigValid}
+              className="flex items-center"
+            >
+              <Sync className="w-4 h-4 mr-2" />
+              Sync Options
+            </Button>
+          </div>
+        </div>
+        
+        {/* Sync Status Message */}
+        {syncMessage && (
+          <div className={`mt-3 p-3 rounded-lg flex items-center ${
+            syncStatus === 'error' ? 'bg-red-50 text-red-700' :
+            syncStatus === 'success' ? 'bg-green-50 text-green-700' :
+            'bg-blue-50 text-blue-700'
+          }`}>
+            {syncStatus === 'error' ? (
+              <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+            ) : syncStatus === 'success' ? (
+              <CheckCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+            ) : (
+              <RefreshCw className="w-4 h-4 mr-2 flex-shrink-0 animate-spin" />
+            )}
+            <span className="text-sm">{syncMessage}</span>
+          </div>
+        )}
+      </Card>
 
       {/* Search */}
       <div className="relative">
@@ -306,13 +709,67 @@ const HostingPlansManager = () => {
                 </div>
 
                 <div className="flex items-center justify-between mb-4">
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    plan.is_active 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {plan.is_active ? 'Active' : 'Inactive'}
-                  </span>
+                  <div className="flex items-center space-x-2">
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      plan.is_active 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {plan.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                    
+                    {/* Upmind Sync Status */}
+                    {plan.upmind_product_id ? (
+                      <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 flex items-center">
+                        <Sync className="w-3 h-3 mr-1" />
+                        Synced
+                      </span>
+                    ) : (
+                      <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600">
+                        Local Only
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Individual Sync Actions */}
+                  {isApiConfigValid && (
+                    <div className="flex items-center space-x-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSyncSinglePlan(plan, 'to')}
+                        disabled={syncStatus === 'syncing'}
+                        title="Push to Upmind"
+                      >
+                        <Upload className="w-3 h-3" />
+                      </Button>
+                      
+                      {plan.upmind_product_id && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleSyncSinglePlan(plan, 'from')}
+                          disabled={syncStatus === 'syncing'}
+                          title="Pull from Upmind"
+                        >
+                          <Download className="w-3 h-3" />
+                        </Button>
+                      )}
+                      
+                      {plan.upmind_product_id && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteFromUpmind(plan)}
+                          disabled={syncStatus === 'syncing'}
+                          className="text-red-600 hover:text-red-700"
+                          title="Remove from Upmind"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
               
@@ -477,6 +934,62 @@ const HostingPlansManager = () => {
                 </div>
               </div>
 
+              {/* Upmind Integration Section */}
+              <div className="border-t border-gray-200 pt-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                  <Sync className="w-5 h-5 mr-2" />
+                  Upmind Integration
+                </h3>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={formData.sync_with_upmind}
+                        onChange={(e) => setFormData(prev => ({ ...prev, sync_with_upmind: e.target.checked }))}
+                        className="mr-2"
+                      />
+                      Enable Upmind Sync
+                    </label>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Automatically sync this plan with Upmind products
+                    </p>
+                  </div>
+                  
+                  {formData.sync_with_upmind && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Upmind Product ID
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.upmind_product_id}
+                          onChange={(e) => setFormData(prev => ({ ...prev, upmind_product_id: e.target.value }))}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                          placeholder="auto-generated on sync"
+                          readOnly={!!editingPlan?.upmind_product_id}
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Upmind Product URL
+                        </label>
+                        <input
+                          type="url"
+                          value={formData.upmind_url}
+                          onChange={(e) => setFormData(prev => ({ ...prev, upmind_url: e.target.value }))}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                          placeholder="https://your-upmind.com/products/..."
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div className="flex items-center space-x-6">
                 <label className="flex items-center">
                   <input
@@ -512,6 +1025,105 @@ const HostingPlansManager = () => {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Sync Options Modal */}
+      {showSyncModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-lg">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-gray-900">
+                Upmind Sync Options
+              </h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSyncModal(false)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-medium text-blue-900 mb-2">Sync Directions</h3>
+                <div className="space-y-2 text-sm text-blue-700">
+                  <p><strong>Pull from Upmind:</strong> Fetch products from Upmind and create/update local plans</p>
+                  <p><strong>Push to Upmind:</strong> Send local plans to Upmind as products</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <Button
+                  onClick={handleSyncAllFromUpmind}
+                  disabled={!isApiConfigValid || syncStatus === 'syncing'}
+                  className="w-full flex items-center justify-center"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Pull All Plans from Upmind
+                </Button>
+
+                <Button
+                  onClick={handleSyncAllToUpmind}
+                  disabled={!isApiConfigValid || syncStatus === 'syncing'}
+                  className="w-full flex items-center justify-center"
+                  variant="outline"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Push All Plans to Upmind
+                </Button>
+
+                <Button
+                  onClick={async () => {
+                    setSyncMessage('Fetching Upmind products...');
+                    await fetchUpmindProducts();
+                  }}
+                  disabled={!isApiConfigValid || syncStatus === 'syncing'}
+                  className="w-full flex items-center justify-center"
+                  variant="outline"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Refresh Upmind Product List
+                </Button>
+              </div>
+
+              {upmindProducts.length > 0 && (
+                <div className="border-t border-gray-200 pt-4">
+                  <h3 className="font-medium text-gray-900 mb-2">
+                    Upmind Products ({upmindProducts.length})
+                  </h3>
+                  <div className="max-h-40 overflow-y-auto space-y-1">
+                    {upmindProducts.map((product) => (
+                      <div key={product.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
+                        <span>{product.name}</span>
+                        <span className="text-gray-500">${product.price}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <h3 className="font-medium text-yellow-900 mb-1">Important Notes</h3>
+                <ul className="text-sm text-yellow-700 space-y-1">
+                  <li>• Syncing will overwrite existing data</li>
+                  <li>• Local-only fields (emoji, popularity) are preserved</li>
+                  <li>• Always backup your data before bulk operations</li>
+                  <li>• Configure Upmind API credentials in Settings first</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="flex justify-end mt-6">
+              <Button
+                variant="outline"
+                onClick={() => setShowSyncModal(false)}
+              >
+                Close
+              </Button>
+            </div>
           </div>
         </div>
       )}

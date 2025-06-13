@@ -12,7 +12,14 @@ import {
   Trash2,
   AlertCircle,
   CheckCircle,
-  RefreshCw
+  RefreshCw,
+  Plus,
+  Edit,
+  Link,
+  Key,
+  TestTube,
+  Trash,
+  Radio
 } from 'lucide-react';
 import { useSiteSettings } from '../../hooks/useSiteSettings';
 import Card from '../ui/Card';
@@ -29,6 +36,20 @@ const SettingsManager = () => {
   const [faviconFile, setFaviconFile] = useState(null);
   const [faviconPreview, setFaviconPreview] = useState(null);
 
+  // API Configuration state
+  const [apiConfigs, setApiConfigs] = useState([]);
+  const [activeConfigId, setActiveConfigId] = useState(null);
+  const [showAddConfig, setShowAddConfig] = useState(false);
+  const [editingConfig, setEditingConfig] = useState(null);
+  const [testingConnection, setTestingConnection] = useState(null);
+  const [newConfig, setNewConfig] = useState({
+    id: '',
+    label: '',
+    baseUrl: '',
+    token: '',
+    brandId: ''
+  });
+
   // Initialize form data when global settings load
   useEffect(() => {
     if (globalSettings && !loading) {
@@ -44,6 +65,161 @@ const SettingsManager = () => {
       setFormData(newFormData);
     }
   }, [globalSettings, loading]);
+
+  // Load API configurations from localStorage on component mount
+  useEffect(() => {
+    const savedConfigs = localStorage.getItem('hostwp_api_configs');
+    const savedActiveConfig = localStorage.getItem('hostwp_active_api_config');
+    
+    if (savedConfigs) {
+      try {
+        const configs = JSON.parse(savedConfigs);
+        setApiConfigs(configs);
+      } catch (error) {
+        console.error('Error parsing saved API configs:', error);
+      }
+    }
+    
+    if (savedActiveConfig) {
+      setActiveConfigId(savedActiveConfig);
+    }
+  }, []);
+
+  // API Configuration helper functions
+  const saveApiConfigsToStorage = (configs, activeId = null) => {
+    localStorage.setItem('hostwp_api_configs', JSON.stringify(configs));
+    if (activeId !== null) {
+      localStorage.setItem('hostwp_active_api_config', activeId);
+    }
+  };
+
+  const generateConfigId = () => {
+    return 'config_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  };
+
+  const validateConfigForm = (config) => {
+    const errors = [];
+    if (!config.label?.trim()) errors.push('Label is required');
+    if (!config.baseUrl?.trim()) errors.push('Base URL is required');
+    if (!config.token?.trim()) errors.push('API Token is required');
+    if (!config.brandId?.trim()) errors.push('Brand ID is required');
+    
+    // Validate URL format
+    if (config.baseUrl?.trim()) {
+      try {
+        new URL(config.baseUrl);
+      } catch {
+        errors.push('Base URL must be a valid URL');
+      }
+    }
+    
+    return errors;
+  };
+
+  const handleAddConfig = () => {
+    const errors = validateConfigForm(newConfig);
+    if (errors.length > 0) {
+      setMessage({ type: 'error', text: errors.join(', ') });
+      return;
+    }
+
+    const configWithId = {
+      ...newConfig,
+      id: generateConfigId(),
+      createdAt: new Date().toISOString()
+    };
+
+    const updatedConfigs = [...apiConfigs, configWithId];
+    setApiConfigs(updatedConfigs);
+    saveApiConfigsToStorage(updatedConfigs);
+    
+    // Set as active if it's the first config
+    if (updatedConfigs.length === 1) {
+      setActiveConfigId(configWithId.id);
+      saveApiConfigsToStorage(updatedConfigs, configWithId.id);
+    }
+
+    setNewConfig({ id: '', label: '', baseUrl: '', token: '', brandId: '' });
+    setShowAddConfig(false);
+    setMessage({ type: 'success', text: 'API configuration added successfully!' });
+  };
+
+  const handleEditConfig = (config) => {
+    setEditingConfig(config);
+    setNewConfig({ ...config });
+    setShowAddConfig(true);
+  };
+
+  const handleUpdateConfig = () => {
+    const errors = validateConfigForm(newConfig);
+    if (errors.length > 0) {
+      setMessage({ type: 'error', text: errors.join(', ') });
+      return;
+    }
+
+    const updatedConfigs = apiConfigs.map(config => 
+      config.id === editingConfig.id 
+        ? { ...newConfig, id: editingConfig.id, createdAt: editingConfig.createdAt }
+        : config
+    );
+
+    setApiConfigs(updatedConfigs);
+    saveApiConfigsToStorage(updatedConfigs);
+    
+    setNewConfig({ id: '', label: '', baseUrl: '', token: '', brandId: '' });
+    setShowAddConfig(false);
+    setEditingConfig(null);
+    setMessage({ type: 'success', text: 'API configuration updated successfully!' });
+  };
+
+  const handleDeleteConfig = (configId) => {
+    const updatedConfigs = apiConfigs.filter(config => config.id !== configId);
+    setApiConfigs(updatedConfigs);
+    
+    // If deleting the active config, clear active selection
+    if (activeConfigId === configId) {
+      const newActiveId = updatedConfigs.length > 0 ? updatedConfigs[0].id : null;
+      setActiveConfigId(newActiveId);
+      saveApiConfigsToStorage(updatedConfigs, newActiveId);
+    } else {
+      saveApiConfigsToStorage(updatedConfigs);
+    }
+    
+    setMessage({ type: 'success', text: 'API configuration deleted successfully!' });
+  };
+
+  const handleSetActiveConfig = (configId) => {
+    setActiveConfigId(configId);
+    saveApiConfigsToStorage(apiConfigs, configId);
+    setMessage({ type: 'success', text: 'Active API configuration updated!' });
+  };
+
+  const handleTestConnection = async (config) => {
+    setTestingConnection(config.id);
+    setMessage({ type: 'info', text: 'Testing connection...' });
+
+    try {
+      // Simple test by trying to fetch from the base URL
+      const response = await fetch(config.baseUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${config.token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok || response.status === 401) {
+        // 401 is acceptable as it means the API is responding
+        setMessage({ type: 'success', text: 'Connection test successful!' });
+      } else {
+        setMessage({ type: 'error', text: `Connection failed: ${response.status} ${response.statusText}` });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: `Connection failed: ${error.message}` });
+    } finally {
+      setTestingConnection(null);
+    }
+  };
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -419,6 +595,202 @@ const SettingsManager = () => {
             />
           </div>
         </div>
+      </Card>
+
+      {/* API Configuration */}
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center">
+            <Key className="w-6 h-6 mr-3 text-gray-700" />
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">API Configuration</h2>
+              <p className="text-sm text-gray-500">Manage Upmind API credentials for hosting automation</p>
+            </div>
+          </div>
+          <Button
+            onClick={() => {
+              setShowAddConfig(true);
+              setEditingConfig(null);
+              setNewConfig({ id: '', label: '', baseUrl: '', token: '', brandId: '' });
+            }}
+            className="bg-primary-600 hover:bg-primary-700"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Configuration
+          </Button>
+        </div>
+
+        {/* Existing Configurations */}
+        {apiConfigs.length > 0 ? (
+          <div className="space-y-4 mb-6">
+            {apiConfigs.map((config) => (
+              <div
+                key={config.id}
+                className={`p-4 border rounded-lg ${
+                  activeConfigId === config.id
+                    ? 'border-primary-500 bg-primary-50'
+                    : 'border-gray-200 bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={() => handleSetActiveConfig(config.id)}
+                      className={`w-4 h-4 rounded-full border-2 ${
+                        activeConfigId === config.id
+                          ? 'bg-primary-600 border-primary-600'
+                          : 'border-gray-300 hover:border-primary-500'
+                      }`}
+                    >
+                      {activeConfigId === config.id && (
+                        <div className="w-2 h-2 bg-white rounded-full mx-auto"></div>
+                      )}
+                    </button>
+                    <div>
+                      <h3 className="font-medium text-gray-900 flex items-center">
+                        {config.label}
+                        {activeConfigId === config.id && (
+                          <span className="ml-2 px-2 py-1 text-xs bg-primary-100 text-primary-800 rounded-full">
+                            Active
+                          </span>
+                        )}
+                      </h3>
+                      <p className="text-sm text-gray-500">{config.baseUrl}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleTestConnection(config)}
+                      disabled={testingConnection === config.id}
+                    >
+                      {testingConnection === config.id ? (
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <TestTube className="w-4 h-4" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditConfig(config)}
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteConfig(config.id)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-4 text-sm text-gray-600">
+                  <div>
+                    <span className="font-medium">Brand ID:</span> {config.brandId}
+                  </div>
+                  <div>
+                    <span className="font-medium">Token:</span> 
+                    <span className="ml-1 font-mono">
+                      {config.token.substring(0, 8)}...
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <Key className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+            <p className="text-lg font-medium">No API configurations found</p>
+            <p className="text-sm">Add your first Upmind API configuration to get started</p>
+          </div>
+        )}
+
+        {/* Add/Edit Configuration Form */}
+        {showAddConfig && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="border-t pt-6"
+          >
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              {editingConfig ? 'Edit Configuration' : 'Add New Configuration'}
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  Label *
+                </label>
+                <input
+                  type="text"
+                  value={newConfig.label}
+                  onChange={(e) => setNewConfig(prev => ({ ...prev, label: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="Production API, Testing API, etc."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  Base URL *
+                </label>
+                <input
+                  type="url"
+                  value={newConfig.baseUrl}
+                  onChange={(e) => setNewConfig(prev => ({ ...prev, baseUrl: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="https://api.upmind.com"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  API Token *
+                </label>
+                <input
+                  type="password"
+                  value={newConfig.token}
+                  onChange={(e) => setNewConfig(prev => ({ ...prev, token: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="Your Upmind API token"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  Brand ID *
+                </label>
+                <input
+                  type="text"
+                  value={newConfig.brandId}
+                  onChange={(e) => setNewConfig(prev => ({ ...prev, brandId: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="Your brand identifier"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end space-x-3 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowAddConfig(false);
+                  setEditingConfig(null);
+                  setNewConfig({ id: '', label: '', baseUrl: '', token: '', brandId: '' });
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={editingConfig ? handleUpdateConfig : handleAddConfig}
+                className="bg-primary-600 hover:bg-primary-700"
+              >
+                {editingConfig ? 'Update Configuration' : 'Add Configuration'}
+              </Button>
+            </div>
+          </motion.div>
+        )}
       </Card>
     </div>
   );

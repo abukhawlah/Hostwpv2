@@ -3,9 +3,15 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import { trackPageView } from './utils/analytics';
 import { SiteSettingsProvider } from './hooks/useSiteSettings';
+import { ApiConfigProvider } from './hooks/useActiveApiConfig';
 import AdminDashboard from './components/admin/AdminDashboard';
 import ContentManager from './components/admin/ContentManager';
 import HostingPlansManager from './components/admin/HostingPlansManager';
+import DomainsManager from './components/admin/DomainsManager';
+import OrdersManager from './components/admin/OrdersManager';
+import CustomersManager from './components/admin/CustomersManager';
+import InvoicesManager from './components/admin/InvoicesManager';
+import UpmindSettingsManager from './components/admin/UpmindSettingsManager';
 import FeaturesManager from './components/admin/FeaturesManager';
 import SEOManager from './components/admin/SEOManager';
 import SettingsManager from './components/admin/SettingsManager';
@@ -65,7 +71,8 @@ const NotFound = () => (
 function App() {
   return (
     <SiteSettingsProvider>
-      <Router>
+      <ApiConfigProvider>
+        <Router>
         <Suspense fallback={<PageLoader />}>
           <Routes>
             {/* Admin Routes */}
@@ -78,6 +85,11 @@ function App() {
               <Route index element={<AdminDashboard />} />
               <Route path="content" element={<ContentManager />} />
               <Route path="hosting-plans" element={<HostingPlansManager />} />
+              <Route path="domains" element={<DomainsManager />} />
+              <Route path="orders" element={<OrdersManager />} />
+              <Route path="customers" element={<CustomersManager />} />
+              <Route path="invoices" element={<InvoicesManager />} />
+              <Route path="upmind-settings" element={<UpmindSettingsManager />} />
               <Route path="features" element={<FeaturesManager />} />
               <Route path="seo" element={<SEOManager />} />
               <Route path="settings" element={<SettingsManager />} />
@@ -112,6 +124,7 @@ function App() {
           </Routes>
         </Suspense>
       </Router>
+      </ApiConfigProvider>
     </SiteSettingsProvider>
   );
 }
