@@ -30,15 +30,22 @@ const AdminLogin = () => {
     setLoading(true);
     setError('');
 
+    console.log('Login attempt:', formData.email); // Debug log
+
     try {
-      const { error } = await signIn(formData.email, formData.password);
+      const { data, error } = await signIn(formData.email, formData.password);
+      
+      console.log('Login result:', { data, error }); // Debug log
       
       if (error) {
+        console.error('Login error:', error); // Debug log
         setError(error.message);
       } else {
+        console.log('Login successful, navigating to /admin'); // Debug log
         navigate('/admin');
       }
     } catch (err) {
+      console.error('Unexpected login error:', err); // Debug log
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);

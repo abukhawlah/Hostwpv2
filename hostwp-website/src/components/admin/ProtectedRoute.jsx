@@ -18,6 +18,9 @@ const ProtectedRoute = ({ children }) => {
     return () => clearTimeout(timer);
   }, []);
 
+  // Debug logging
+  console.log('ProtectedRoute - user:', user, 'loading:', loading, 'isChecking:', isChecking);
+
   // Show loading spinner while checking authentication
   if (loading || isChecking) {
     return (

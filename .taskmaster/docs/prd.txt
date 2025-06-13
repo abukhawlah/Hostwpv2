@@ -1,0 +1,65 @@
+<context>
+# Overview  
+HostWP Marketing Website is a modern, responsive web application designed to showcase HostWP's hosting services, products, and company information. Built for performance, SEO, and a professional user experience, it targets potential customers seeking reliable hosting solutions and information about HostWP.
+
+# Core Features  
+- **Modern React Architecture**: Utilizes React 19 and hooks for maintainable, scalable code.
+- **Fast Development & Builds**: Powered by Vite for rapid development and optimized production builds.
+- **Responsive Design**: Mobile-first approach using Tailwind CSS for seamless experience across devices.
+- **Smooth Animations**: Enhanced user experience with Framer Motion and GSAP for transitions and effects.
+- **SEO Optimized**: Structured for search engine visibility and performance.
+- **Component-Based**: Modular, reusable UI components for maintainability.
+- **Content Management**: JSON-based content system for easy updates.
+- **Analytics Integration**: Built-in utilities for tracking user interactions.
+
+# User Experience  
+- **User Personas**: Prospective hosting customers, businesses, and individuals seeking information about HostWP services.
+- **Key User Flows**: 
+  - Landing on the homepage and exploring features
+  - Navigating to product, domain, and support pages
+  - Accessing legal and company information
+  - Contacting support or sales via forms
+- **UI/UX Considerations**: Clean, professional design; fast load times; mobile responsiveness; accessible navigation; engaging animations.
+</context>
+<PRD>
+# Technical Architecture  
+- **Frontend**: React 19, Vite 6, Tailwind CSS 3
+- **Routing**: React Router DOM 7
+- **Animations**: Framer Motion, GSAP
+- **Icons**: Lucide React
+- **Content/Data**: JSON files in `src/data/` for content and navigation
+- **Custom Hooks**: For content management and shared logic
+- **Utilities**: Analytics and integration helpers
+- **Linting**: ESLint 9 for code quality
+
+# Development Roadmap  
+- **MVP Requirements**:
+  - Home, Products, Domains, Our Story, White Glove Support, Contact, and Legal pages
+  - Responsive layout and navigation
+  - Content management via JSON
+  - Basic analytics integration
+  - SEO optimization
+- **Future Enhancements**:
+  - Advanced analytics/dashboard
+  - CMS integration
+  - Additional animations/interactivity
+  - Blog or news section
+
+# Logical Dependency Chain
+- Set up project structure and configuration
+- Implement core layout and navigation
+- Build Home and key product pages
+- Add legal and support pages
+- Integrate content management
+- Add analytics utilities
+- Enhance with animations and SEO improvements
+
+# Risks and Mitigations  
+- **Technical challenges**: Keeping up with latest React/Tailwind updates; mitigated by using stable versions and linting.
+- **MVP scope**: Risk of overengineering; mitigated by focusing on essential pages and features first.
+- **Resource constraints**: Limited dev time; mitigated by modular, component-based approach.
+
+# Appendix  
+- See README.md for full tech stack and structure
+- Refer to Tailwind, React, and Vite documentation for best practices
+</PRD> 
