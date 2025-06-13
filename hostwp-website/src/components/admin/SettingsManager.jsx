@@ -14,7 +14,7 @@ import {
   CheckCircle,
   RefreshCw
 } from 'lucide-react';
-import { useSiteSettings } from '../../hooks/useSiteSettings.jsx';
+import { useSiteSettings } from '../../hooks/useSiteSettings';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 
@@ -32,7 +32,7 @@ const SettingsManager = () => {
   // Initialize form data when global settings load
   useEffect(() => {
     if (globalSettings && !loading) {
-      setFormData({
+      const newFormData = {
         favicon_enabled: globalSettings.favicon_enabled,
         favicon_url: globalSettings.favicon_url,
         site_title: globalSettings.site_title,
@@ -40,7 +40,8 @@ const SettingsManager = () => {
         meta_keywords: globalSettings.meta_keywords,
         contact_email: globalSettings.contact_email,
         support_phone: globalSettings.support_phone
-      });
+      };
+      setFormData(newFormData);
     }
   }, [globalSettings, loading]);
 
@@ -143,11 +144,15 @@ const SettingsManager = () => {
 
   // Check if form has unsaved changes
   const hasUnsavedChanges = () => {
-    if (!globalSettings || !formData) return false;
+    if (!globalSettings || !formData) {
+      return false;
+    }
     
-    return Object.keys(formData).some(key => 
+    const changes = Object.keys(formData).some(key => 
       formData[key] !== globalSettings[key]
     ) || faviconPreview !== null;
+    
+    return changes;
   };
 
   if (loading) {
