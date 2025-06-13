@@ -25,8 +25,8 @@ import {
   Receipt,
   MoreVertical
 } from 'lucide-react';
-import { useActiveApiConfig } from '../../hooks/useActiveApiConfig';
-import { getInvoices, createInvoice, updateInvoice, sendInvoice } from '../../services/upmindApi';
+import { useActiveApiConfig } from '../../hooks/useActiveApiConfig.jsx';
+import { getInvoices, createInvoice, updateInvoice, sendInvoice } from '../../services/upmind';
 
 const InvoicesManager = () => {
   const [invoices, setInvoices] = useState([]);

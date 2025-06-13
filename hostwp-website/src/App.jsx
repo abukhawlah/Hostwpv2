@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import { trackPageView } from './utils/analytics';
 import { SiteSettingsProvider } from './hooks/useSiteSettings';
-import { ApiConfigProvider } from './hooks/useActiveApiConfig';
+import { ApiConfigProvider } from './hooks/useActiveApiConfig.jsx';
 import AdminDashboard from './components/admin/AdminDashboard';
 import ContentManager from './components/admin/ContentManager';
 import HostingPlansManager from './components/admin/HostingPlansManager';

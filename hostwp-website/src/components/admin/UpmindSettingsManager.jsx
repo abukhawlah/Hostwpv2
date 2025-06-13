@@ -21,7 +21,7 @@ import {
   Trash2,
   Edit
 } from 'lucide-react';
-import { useActiveApiConfig } from '../../hooks/useActiveApiConfig';
+import { useActiveApiConfig } from '../../hooks/useActiveApiConfig.jsx';
 
 const UpmindSettingsManager = () => {
   const [showApiKey, setShowApiKey] = useState(false);

@@ -9,14 +9,14 @@ import {
   AlertCircle,
   CheckCircle,
   ExternalLink,
-  Sync,
+  RefreshCw as Sync,
   Wifi,
   WifiOff,
   Clock,
   X,
   Filter
 } from 'lucide-react';
-import { useActiveApiConfig } from '../../hooks/useActiveApiConfig';
+import { useActiveApiConfig } from '../../hooks/useActiveApiConfig.jsx';
 import { searchDomain, renewDomain } from '../../services/upmind';
 import Card from '../ui/Card';
 import Button from '../ui/Button';

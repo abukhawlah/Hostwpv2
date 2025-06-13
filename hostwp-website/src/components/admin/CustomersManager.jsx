@@ -26,8 +26,8 @@ import {
   Clock,
   XCircle
 } from 'lucide-react';
-import { useActiveApiConfig } from '../../hooks/useActiveApiConfig';
-import { getCustomers, createCustomer, updateCustomer, deleteCustomer } from '../../services/upmindApi';
+import { useActiveApiConfig } from '../../hooks/useActiveApiConfig.jsx';
+import { getCustomers, createCustomer, updateCustomer, deleteCustomer } from '../../services/upmind';
 
 const CustomersManager = () => {
   const [customers, setCustomers] = useState([]);

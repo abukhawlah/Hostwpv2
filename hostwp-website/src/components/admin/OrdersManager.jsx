@@ -9,7 +9,7 @@ import {
   AlertCircle,
   CheckCircle,
   ExternalLink,
-  Sync,
+  RefreshCw as Sync,
   Wifi,
   WifiOff,
   Clock,
@@ -23,7 +23,7 @@ import {
   CreditCard,
   Truck
 } from 'lucide-react';
-import { useActiveApiConfig } from '../../hooks/useActiveApiConfig';
+import { useActiveApiConfig } from '../../hooks/useActiveApiConfig.jsx';
 import { getOrders, createOrder } from '../../services/upmind';
 import Card from '../ui/Card';
 import Button from '../ui/Button';

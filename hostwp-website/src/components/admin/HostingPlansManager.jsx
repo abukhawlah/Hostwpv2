@@ -19,7 +19,7 @@ import {
   RefreshCw,
   Upload,
   Download,
-  Sync,
+  RefreshCw as Sync,
   ExternalLink,
   Wifi,
   WifiOff
@@ -27,7 +27,7 @@ import {
 import { supabase } from '../../lib/supabase';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
-import { useActiveApiConfig } from '../../hooks/useActiveApiConfig';
+import { useActiveApiConfig } from '../../hooks/useActiveApiConfig.jsx';
 import { 
   getProducts, 
   createProduct, 
