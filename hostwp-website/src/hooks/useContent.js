@@ -37,6 +37,29 @@ export const useContent = (sectionKey) => {
   return { content, loading, error };
 };
 
+// Hook for fetching static content from content.json
+export const useStaticContent = (sectionKey) => {
+  const [content, setContent] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    import('../data/content.json')
+      .then(module => {
+        const data = sectionKey ? module.default[sectionKey] : module.default;
+        setContent(data || null);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(`Error loading static content for ${sectionKey}:`, err);
+        setError(`Error loading static content: ${err.message}`);
+        setLoading(false);
+      });
+  }, [sectionKey]);
+
+  return { content, loading, error };
+};
+
 // Hook for fetching hosting plans
 export const useHostingPlans = () => {
   const [plans, setPlans] = useState([]);

@@ -5,11 +5,11 @@ import { Check, Star, Zap, Cloud, Server } from 'lucide-react';
 import Hero from '../components/ui/Hero';
 import ProductCard from '../components/ui/ProductCard';
 import { FadeInOnScroll, StaggerChildren } from '../components/animations/ScrollAnimations';
-import { useContent } from '../hooks/useContent';
+import { useStaticContent } from '../hooks/useContent';
 import { trackButtonClick } from '../utils/analytics';
 
 const Products = () => {
-  const { content, loading, error } = useContent('products');
+  const { content, loading, error } = useStaticContent('products');
 
   const categoryIcons = {
     wordpress: Zap,
