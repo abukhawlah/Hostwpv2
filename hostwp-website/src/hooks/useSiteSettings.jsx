@@ -125,17 +125,17 @@ export const SiteSettingsProvider = ({ children }) => {
     existingFavicons.forEach(link => link.remove());
 
     if (enabled && url) {
-      // Add new favicon link
+      // Add new favicon link with cache busting
       const link = document.createElement('link');
       link.rel = 'icon';
       link.type = 'image/x-icon';
-      link.href = url;
+      link.href = url + '?v=' + Date.now(); // Cache busting
       document.head.appendChild(link);
-    } else if (!enabled) {
-      // Add empty data URL to disable favicon
+    } else {
+      // Add empty data URL to disable favicon with cache busting
       const link = document.createElement('link');
       link.rel = 'icon';
-      link.href = 'data:,';
+      link.href = 'data:,?v=' + Date.now(); // Cache busting
       document.head.appendChild(link);
     }
   };
