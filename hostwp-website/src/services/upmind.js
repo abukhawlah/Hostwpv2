@@ -148,8 +148,13 @@ class UpmindHttpClient {
   
   async executeViaProxy(originalUrl, originalOptions) {
     try {
+      console.log(`🔄 [executeViaProxy] Starting proxy request...`);
+      console.log(`🔧 [executeViaProxy] Original URL:`, originalUrl);
+      console.log(`🔧 [executeViaProxy] Base URL:`, this.baseUrl);
+      
       // Extract endpoint from the original URL
       const endpoint = originalUrl.replace(this.baseUrl, '');
+      console.log(`🔧 [executeViaProxy] Extracted endpoint:`, endpoint);
       
       const proxyPayload = {
         baseUrl: this.baseUrl,
@@ -159,7 +164,12 @@ class UpmindHttpClient {
         body: originalOptions.body ? JSON.parse(originalOptions.body) : undefined
       };
 
-      console.log(`🔄 [Upmind Proxy] Calling proxy with:`, { endpoint, method: proxyPayload.method });
+      console.log(`🔄 [executeViaProxy] Calling proxy with:`, { 
+        endpoint, 
+        method: proxyPayload.method,
+        hasToken: !!proxyPayload.token,
+        tokenLength: proxyPayload.token ? proxyPayload.token.length : 0
+      });
 
       const proxyResponse = await fetch('/api/upmind-proxy', {
         method: 'POST',
@@ -169,19 +179,27 @@ class UpmindHttpClient {
         body: JSON.stringify(proxyPayload)
       });
 
+      console.log(`📡 [executeViaProxy] Proxy response status:`, proxyResponse.status);
+      
       const proxyResult = await proxyResponse.json();
+      console.log(`📋 [executeViaProxy] Proxy result:`, {
+        success: proxyResult.success,
+        status: proxyResult.status,
+        hasData: !!proxyResult.data,
+        error: proxyResult.error
+      });
       
       if (proxyResult.success) {
-        console.log(`✅ [Upmind Proxy] Success:`, { status: proxyResult.status });
+        console.log(`✅ [executeViaProxy] Success:`, { status: proxyResult.status });
         this.useProxy = true; // Use proxy for future requests
         return proxyResult;
       } else {
-        console.log(`❌ [Upmind Proxy] Failed:`, proxyResult);
+        console.log(`❌ [executeViaProxy] Failed:`, proxyResult);
         return proxyResult;
       }
 
     } catch (proxyError) {
-      console.log(`❌ [Upmind Proxy] Error:`, proxyError);
+      console.log(`❌ [executeViaProxy] Error:`, proxyError);
       return {
         success: false,
         error: `Proxy error: ${proxyError.message}`,
@@ -310,25 +328,40 @@ class UpmindHttpClient {
     const isBrowser = typeof window !== 'undefined';
     const isCrossOrigin = isBrowser && window.location.origin !== new URL(this.baseUrl).origin;
     
-    console.log(`🔍 [Upmind API] Environment check:`, {
+    console.log(`🔍 [makeRequest] Environment check:`, {
       isBrowser,
       currentOrigin: isBrowser ? window.location.origin : 'N/A',
       apiOrigin: new URL(this.baseUrl).origin,
       isCrossOrigin,
-      useProxy: this.useProxy
+      useProxy: this.useProxy,
+      endpoint,
+      fullUrl: url
     });
     
     // If we've determined to use proxy, or if this is a cross-origin request in browser, go straight to proxy
     if (this.useProxy || (isBrowser && isCrossOrigin)) {
-      console.log(`🔄 [Upmind API] Using proxy for cross-origin request: ${url}`);
+      console.log(`🔄 [makeRequest] Using proxy for cross-origin request: ${url}`);
       return this.executeViaProxy(url, requestOptions);
     }
+    
+    console.log(`🚀 [makeRequest] Making direct request to: ${url}`);
+    console.log(`🔧 [makeRequest] Request options:`, {
+      method: requestOptions.method,
+      headers: requestOptions.headers,
+      hasBody: !!requestOptions.body
+    });
 
     return this.executeWithRetry(url, requestOptions);
   }
   
   async getProducts() {
-    console.log('🔍 Fetching products from Upmind API...');
+    console.log('🔍 UpmindHttpClient: Fetching products from Upmind API...');
+    console.log('🔧 UpmindHttpClient: Current config:', {
+      baseUrl: this.baseUrl,
+      hasToken: !!this.token,
+      brandId: this.brandId,
+      useProxy: this.useProxy
+    });
     
     // Test basic connectivity first
     await this.testConnectivity(this.baseUrl);
@@ -533,7 +566,8 @@ class UpmindApiService {
       console.log('🔧 Current client config:', {
         baseUrl: this.client.baseUrl,
         hasToken: !!this.client.token,
-        brandId: this.client.brandId
+        brandId: this.client.brandId,
+        useProxy: this.client.useProxy
       });
       
       // Check if client is configured
@@ -541,6 +575,7 @@ class UpmindApiService {
         throw new Error('API client not configured. Please check your API settings.');
       }
       
+      console.log('🚀 UpmindApiService: About to call client.getProducts()...');
       const products = await this.client.getProducts();
       console.log('✅ UpmindApiService: Products fetched successfully:', products?.length || 0);
       
