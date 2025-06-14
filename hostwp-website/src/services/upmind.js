@@ -226,32 +226,51 @@ class UpmindApiService {
   
   // Product Management
   async getProducts() {
-    try {
-      console.log('🚀 Making API request to /products endpoint...');
-      const response = await this.client.makeRequest('/products');
-      console.log('🔄 Raw API response:', response);
-      
-      if (response.success) {
-        console.log('✨ Transforming products data...');
-        const transformedData = this.transformProductsResult(response.data);
-        console.log('🎯 Transformed products:', transformedData);
+    // Try different possible endpoints for Upmind products
+    const possibleEndpoints = [
+      '/products',
+      '/services', 
+      '/hosting-plans',
+      '/api/products',
+      '/api/services',
+      '/api/hosting-plans',
+      '/brands/default/products',
+      '/brands/default/services'
+    ];
+    
+    for (const endpoint of possibleEndpoints) {
+      try {
+        console.log(`🚀 Trying API endpoint: ${endpoint}...`);
+        const response = await this.client.makeRequest(endpoint);
+        console.log(`🔄 Response from ${endpoint}:`, response);
         
-        return {
-          ...response,
-          data: transformedData
-        };
+        if (response.success && response.data && Array.isArray(response.data) && response.data.length > 0) {
+          console.log(`✅ Found products at ${endpoint}!`);
+          console.log('✨ Transforming products data...');
+          const transformedData = this.transformProductsResult(response.data);
+          console.log('🎯 Transformed products:', transformedData);
+          
+          return {
+            ...response,
+            data: transformedData
+          };
+        } else if (response.success && response.data && Array.isArray(response.data) && response.data.length === 0) {
+          console.log(`⚠️ ${endpoint} returned empty array - continuing to try other endpoints...`);
+        } else {
+          console.log(`❌ ${endpoint} failed:`, response);
+        }
+      } catch (error) {
+        console.error(`💥 Exception trying ${endpoint}:`, error);
       }
-      
-      console.log('⚠️ API request failed:', response);
-      return response;
-    } catch (error) {
-      console.error('💥 Exception in getProducts:', error);
-      return {
-        success: false,
-        error: `Failed to fetch products: ${error.message}`,
-        details: error
-      };
     }
+    
+    // If we get here, none of the endpoints worked
+    console.error('🚫 All product endpoints failed');
+    return {
+      success: false,
+      error: 'No products found. Tried multiple endpoints: ' + possibleEndpoints.join(', '),
+      details: { attemptedEndpoints: possibleEndpoints }
+    };
   }
   
   async createProduct(productData) {
