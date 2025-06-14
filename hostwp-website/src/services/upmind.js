@@ -231,11 +231,11 @@ class UpmindApiService {
       '/products',
       '/services', 
       '/hosting-plans',
-      '/api/products',
-      '/api/services',
-      '/api/hosting-plans',
+      '/plans',
+      '/service-plans',
       '/brands/default/products',
-      '/brands/default/services'
+      '/brands/default/services',
+      '/brands/default/plans'
     ];
     
     for (const endpoint of possibleEndpoints) {
