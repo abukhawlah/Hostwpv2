@@ -75,6 +75,17 @@ const UpmindSettingsManager = () => {
   }, [activeConfig]);
 
   const handleSave = async () => {
+    console.log('🔄 Save button clicked, form data:', formData);
+    
+    // Validate required fields
+    if (!formData.name || !formData.apiKey || !formData.baseUrl) {
+      setTestResult({
+        success: false,
+        message: 'Please fill in all required fields (Name, API Key, Base URL)'
+      });
+      return;
+    }
+    
     setSaving(true);
     try {
       // Map form data to the expected API config format
@@ -89,21 +100,29 @@ const UpmindSettingsManager = () => {
         retryAttempts: formData.retryAttempts,
         description: formData.description
       };
+      
+      console.log('💾 Saving config data:', configData);
 
       let result;
       if (editingConfig) {
+        console.log('📝 Updating existing config (editing mode):', editingConfig.id);
         result = await updateConfig(editingConfig.id, configData);
         setEditingConfig(null);
       } else if (activeConfig) {
+        console.log('📝 Updating active config:', activeConfig.id);
         result = await updateConfig(activeConfig.id, configData);
       } else {
+        console.log('➕ Adding new config');
         result = await addConfig(configData);
         
         // If this is a new configuration, automatically activate it
         if (result && result.success && result.config) {
+          console.log('✅ Activating new config:', result.config.id);
           await switchConfiguration(result.config.id);
         }
       }
+      
+      console.log('💾 Save result:', result);
       
       // Show success message
       setTestResult({
@@ -113,6 +132,7 @@ const UpmindSettingsManager = () => {
       
       setTimeout(() => setTestResult(null), 3000);
     } catch (error) {
+      console.error('❌ Save error:', error);
       setTestResult({
         success: false,
         message: 'Failed to save configuration: ' + error.message
