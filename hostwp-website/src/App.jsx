@@ -13,6 +13,7 @@ import UpmindSettingsManager from './components/admin/UpmindSettingsManager';
 import FeaturesManager from './components/admin/FeaturesManager';
 import SEOManager from './components/admin/SEOManager';
 import SettingsManager from './components/admin/SettingsManager';
+import HostingPlansManager from './components/admin/HostingPlansManager';
 
 // Lazy load pages for better performance
 const Home = lazy(() => import('./pages/Home'));
@@ -85,6 +86,7 @@ function App() {
               <Route path="orders" element={<OrdersManager />} />
               <Route path="customers" element={<CustomersManager />} />
               <Route path="invoices" element={<InvoicesManager />} />
+              <Route path="hosting-plans" element={<HostingPlansManager />} />
               <Route path="upmind-settings" element={<UpmindSettingsManager />} />
               <Route path="features" element={<FeaturesManager />} />
               <Route path="seo" element={<SEOManager />} />
