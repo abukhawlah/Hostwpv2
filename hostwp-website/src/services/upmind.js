@@ -389,13 +389,14 @@ class UpmindApiService {
   
   // Configuration method
   configure(config) {
-    const validation = validateApiConfig(config);
-    if (!validation.isValid) {
-      throw new Error(`Invalid configuration: ${validation.errors.join(', ')}`);
+    try {
+      // validateApiConfig throws an error if invalid, returns true if valid
+      validateApiConfig(config);
+      this.client.configure(config);
+      return { success: true };
+    } catch (error) {
+      throw new Error(`Invalid configuration: ${error.message}`);
     }
-    
-    this.client.configure(config);
-    return { success: true };
   }
   
   // Domain Management
