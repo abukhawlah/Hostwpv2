@@ -384,7 +384,7 @@ class UpmindHttpClient {
 // Main Upmind API Service
 class UpmindApiService {
   constructor() {
-    this.client = upmindAPI; // Use the singleton instance
+    this.client = new UpmindAPI(); // Create a new instance
   }
   
   // Configuration method
