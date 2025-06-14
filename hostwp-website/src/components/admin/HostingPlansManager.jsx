@@ -237,16 +237,30 @@ const HostingPlansManager = () => {
       setSyncStatus('syncing');
       setSyncMessage('Fetching products from Upmind...');
       
+      console.log('🔍 Fetching products from Upmind API...');
       const response = await getProducts();
+      console.log('📦 Upmind API Response:', response);
+      
       if (response.success) {
+        console.log('✅ Products fetched successfully:', response.data);
+        console.log('📊 Number of products:', response.data?.length || 0);
+        
+        if (!response.data || response.data.length === 0) {
+          setSyncStatus('error');
+          setSyncMessage('No products found in Upmind. Please check your Upmind account and ensure you have products configured.');
+          return [];
+        }
+        
         setUpmindProducts(response.data);
         setSyncMessage(`Found ${response.data.length} products in Upmind`);
         return response.data;
       } else {
+        console.error('❌ API Error:', response.error);
+        console.error('📋 Error Details:', response.details);
         throw new Error(response.error || 'Failed to fetch products');
       }
     } catch (error) {
-      console.error('Error fetching Upmind products:', error);
+      console.error('💥 Error fetching Upmind products:', error);
       setSyncStatus('error');
       setSyncMessage(`Error fetching products: ${error.message}`);
       return [];

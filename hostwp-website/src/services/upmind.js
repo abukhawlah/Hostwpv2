@@ -227,17 +227,25 @@ class UpmindApiService {
   // Product Management
   async getProducts() {
     try {
+      console.log('🚀 Making API request to /products endpoint...');
       const response = await this.client.makeRequest('/products');
+      console.log('🔄 Raw API response:', response);
       
       if (response.success) {
+        console.log('✨ Transforming products data...');
+        const transformedData = this.transformProductsResult(response.data);
+        console.log('🎯 Transformed products:', transformedData);
+        
         return {
           ...response,
-          data: this.transformProductsResult(response.data)
+          data: transformedData
         };
       }
       
+      console.log('⚠️ API request failed:', response);
       return response;
     } catch (error) {
+      console.error('💥 Exception in getProducts:', error);
       return {
         success: false,
         error: `Failed to fetch products: ${error.message}`,
