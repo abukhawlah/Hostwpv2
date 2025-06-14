@@ -451,19 +451,76 @@ class UpmindApiService {
     }
   }
   
+    // Connection Testing
+  async testConnection(config) {
+    try {
+      // Validate configuration first
+      UpmindApiConfig.validateConfig(config);
+      
+      // Configure client temporarily for testing
+      const originalConfig = { 
+        baseUrl: this.client.baseUrl, 
+        token: this.client.token, 
+        brandId: this.client.brandId 
+      };
+      
+      this.client.configure(config);
+      
+      // Test basic connectivity
+      const connectivityTest = await this.client.testConnectivity(config.baseUrl);
+      
+      // Test API endpoints
+      const endpointsToTest = ['/products', '/services', '/hosting-plans', '/plans'];
+      let workingEndpoint = null;
+      let apiData = null;
+      
+      for (const endpoint of endpointsToTest) {
+        try {
+          const response = await this.client.makeRequest(endpoint);
+          if (response.success && response.data) {
+            workingEndpoint = endpoint;
+            apiData = response.data;
+            break;
+          }
+        } catch (error) {
+          console.log(`Endpoint ${endpoint} failed:`, error.message);
+        }
+      }
+      
+      // Restore original configuration
+      if (originalConfig.baseUrl) {
+        this.client.configure(originalConfig);
+      }
+      
+      return {
+        success: true,
+        connectivity: connectivityTest,
+        workingEndpoint,
+        dataAvailable: !!apiData,
+        dataCount: Array.isArray(apiData) ? apiData.length : 0
+      };
+      
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
   // Product Management
   async getProducts() {
     return this.client.getProducts();
   }
-  
+
   async createProduct(productData) {
     return this.client.createProduct(productData);
   }
-  
+
   async updateProduct(productId, productData) {
     return this.client.updateProduct(productId, productData);
   }
-  
+
   async deleteProduct(productId) {
     return this.client.deleteProduct(productId);
   }
@@ -870,6 +927,7 @@ class UpmindApiService {
 const upmindApi = new UpmindApiService();
 
 // Export individual functions for easier importing
+export const testConnection = (config) => upmindApi.testConnection(config);
 export const searchDomain = (domain) => upmindApi.searchDomain(domain);
 export const renewDomain = (domainId) => upmindApi.renewDomain(domainId);
 export const getProducts = () => upmindApi.getProducts();

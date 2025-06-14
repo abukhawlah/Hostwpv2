@@ -98,6 +98,8 @@ const UpmindSettingsManager = () => {
         environment: formData.environment,
         timeout: formData.timeout,
         retryAttempts: formData.retryAttempts,
+        enableLogging: formData.enableLogging,
+        webhookSecret: formData.webhookSecret,
         description: formData.description
       };
       
@@ -124,13 +126,20 @@ const UpmindSettingsManager = () => {
       
       console.log('💾 Save result:', result);
       
-      // Show success message
-      setTestResult({
-        success: true,
-        message: 'Configuration saved and activated successfully!'
-      });
-      
-      setTimeout(() => setTestResult(null), 3000);
+      if (result && result.success) {
+        // Show success message
+        setTestResult({
+          success: true,
+          message: 'Configuration saved and activated successfully!'
+        });
+        
+        setTimeout(() => setTestResult(null), 3000);
+      } else {
+        setTestResult({
+          success: false,
+          message: result?.error || 'Failed to save configuration'
+        });
+      }
     } catch (error) {
       console.error('❌ Save error:', error);
       setTestResult({
@@ -155,23 +164,151 @@ const UpmindSettingsManager = () => {
     setTestResult(null);
 
     try {
-      // Simulate API test
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      console.log('🧪 Testing connection to:', formData.baseUrl);
       
-      // Mock successful connection
-      setTestResult({
-        success: true,
-        message: 'Connection successful! API is responding correctly.',
-        details: {
-          responseTime: '245ms',
-          version: 'v1.2.3',
-          rateLimit: '1000/hour'
+      // Create a temporary config for testing
+      const testConfig = {
+        baseUrl: formData.baseUrl,
+        token: formData.apiKey,
+        brandId: formData.brandId || 'default'
+      };
+
+      // Test 1: Basic connectivity
+      console.log('🔍 Step 1: Testing basic connectivity...');
+      const connectivityStart = Date.now();
+      
+      try {
+        const testUrl = formData.baseUrl.replace(/\/api\/v1$/, '');
+        const response = await fetch(testUrl, { 
+          method: 'HEAD',
+          mode: 'no-cors'
+        });
+        console.log('✅ Basic connectivity test passed');
+      } catch (error) {
+        console.log('⚠️ Basic connectivity test failed, but continuing...');
+      }
+
+      // Test 2: API Authentication
+      console.log('🔍 Step 2: Testing API authentication...');
+      const authTestUrl = `${formData.baseUrl}/auth/test`;
+      
+      let authResponse;
+      try {
+        authResponse = await fetch(authTestUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${formData.apiKey}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-Brand-ID': formData.brandId || 'default'
+          }
+        });
+        console.log('🔐 Auth test response status:', authResponse.status);
+      } catch (error) {
+        console.log('⚠️ Auth test failed, trying alternative endpoints...');
+      }
+
+      // Test 3: Try to fetch products (real API test)
+      console.log('🔍 Step 3: Testing API endpoints...');
+      const productTestUrls = [
+        `${formData.baseUrl}/products`,
+        `${formData.baseUrl}/services`,
+        `${formData.baseUrl}/hosting-plans`,
+        `${formData.baseUrl}/plans`
+      ];
+
+      let apiWorking = false;
+      let apiResponse = null;
+      let workingEndpoint = null;
+
+      for (const testUrl of productTestUrls) {
+        try {
+          console.log(`🔍 Testing endpoint: ${testUrl}`);
+          const response = await fetch(testUrl, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${formData.apiKey}`,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'X-Brand-ID': formData.brandId || 'default'
+            }
+          });
+
+          console.log(`📊 ${testUrl} response:`, response.status, response.statusText);
+
+          if (response.ok) {
+            try {
+              const data = await response.json();
+              console.log(`✅ ${testUrl} returned data:`, data);
+              apiWorking = true;
+              apiResponse = data;
+              workingEndpoint = testUrl;
+              break;
+            } catch (jsonError) {
+              console.log(`⚠️ ${testUrl} returned non-JSON response`);
+            }
+          } else if (response.status === 401) {
+            throw new Error('Authentication failed. Please check your API key.');
+          } else if (response.status === 403) {
+            throw new Error('Access forbidden. Please check your API permissions.');
+          }
+        } catch (error) {
+          console.log(`❌ ${testUrl} failed:`, error.message);
+          if (error.message.includes('Authentication') || error.message.includes('Access forbidden')) {
+            throw error; // Re-throw auth errors immediately
+          }
         }
-      });
+      }
+
+      const responseTime = Date.now() - connectivityStart;
+
+      if (apiWorking) {
+        // Success - API is working
+        const productCount = Array.isArray(apiResponse) ? apiResponse.length : 
+                           apiResponse?.data?.length || 
+                           apiResponse?.products?.length || 
+                           apiResponse?.services?.length || 0;
+
+        setTestResult({
+          success: true,
+          message: 'Connection successful! API is responding correctly.',
+          details: {
+            responseTime: `${responseTime}ms`,
+            workingEndpoint: workingEndpoint.replace(formData.baseUrl, ''),
+            dataFound: `${productCount} items found`,
+            authStatus: 'Valid',
+            apiVersion: apiResponse?.version || 'Unknown'
+          }
+        });
+      } else if (authResponse && (authResponse.status === 200 || authResponse.status === 401)) {
+        // API is reachable but no data endpoints work
+        setTestResult({
+          success: false,
+          message: 'API is reachable but no product endpoints are working. This might be a configuration issue.',
+          details: {
+            responseTime: `${responseTime}ms`,
+            authStatus: authResponse.status === 200 ? 'Valid' : 'Invalid',
+            issue: 'No working data endpoints found'
+          }
+        });
+      } else {
+        // Complete failure
+        throw new Error('API is not responding or all endpoints failed');
+      }
+
     } catch (error) {
+      console.error('❌ Connection test failed:', error);
       setTestResult({
         success: false,
-        message: 'Connection failed: ' + error.message
+        message: `Connection failed: ${error.message}`,
+        details: {
+          error: error.name,
+          suggestion: error.message.includes('Authentication') ? 
+            'Check your API key in the Upmind dashboard' :
+            error.message.includes('Access forbidden') ?
+            'Verify your API permissions and brand ID' :
+            'Check your base URL and network connection'
+        }
       });
     } finally {
       setTestingConnection(false);
@@ -304,28 +441,29 @@ const UpmindSettingsManager = () => {
                       onClick={() => {
                         setEditingConfig(config);
                         setFormData({
-                          name: config.name,
-                          apiKey: config.apiKey,
-                          baseUrl: config.baseUrl,
-                          environment: config.environment,
-                          timeout: config.timeout,
-                          retryAttempts: config.retryAttempts,
-                          enableLogging: config.enableLogging,
-                          webhookSecret: config.webhookSecret,
-                          description: config.description
+                          name: config.name || '',
+                          apiKey: config.token || '',
+                          brandId: config.brandId || '',
+                          baseUrl: config.baseUrl || 'https://my.hostwp.co/api/v1',
+                          environment: config.environment || 'production',
+                          timeout: config.timeout || 30000,
+                          retryAttempts: config.retryAttempts || 3,
+                          enableLogging: config.enableLogging !== false,
+                          webhookSecret: config.webhookSecret || '',
+                          description: config.description || ''
                         });
                       }}
-                      className="text-blue-600 hover:text-blue-900"
-                      title="Edit"
+                      className="btn-secondary text-sm flex items-center"
                     >
-                      <Edit className="w-4 h-4" />
+                      <Edit className="w-3 h-3 mr-1" />
+                      Edit
                     </button>
                     <button
                       onClick={() => handleDeleteConfig(config.id)}
-                      className="text-red-600 hover:text-red-900"
-                      title="Delete"
+                      className="btn-danger text-sm flex items-center"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3 h-3 mr-1" />
+                      Delete
                     </button>
                   </div>
                 </div>
@@ -339,16 +477,16 @@ const UpmindSettingsManager = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200">
           <h3 className="text-lg font-medium text-gray-900">
-            {editingConfig ? 'Edit Configuration' : 'API Configuration'}
+            {editingConfig ? 'Edit Configuration' : 'Add New Configuration'}
           </h3>
         </div>
-
+        
         <div className="p-6 space-y-6">
-          {/* Basic Settings */}
+          {/* Basic Information */}
           <div>
             <h4 className="text-md font-medium text-gray-900 mb-4 flex items-center">
-              <Settings className="w-5 h-5 mr-2" />
-              Basic Settings
+              <Key className="w-5 h-5 mr-2" />
+              Basic Information
             </h4>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -379,30 +517,30 @@ const UpmindSettingsManager = () => {
                   <option value="development">Development</option>
                 </select>
               </div>
-            </div>
 
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description
-              </label>
-              <input
-                type="text"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Optional description for this configuration"
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              />
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Optional description for this configuration"
+                  rows={2}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+              </div>
             </div>
           </div>
 
           {/* API Credentials */}
           <div>
             <h4 className="text-md font-medium text-gray-900 mb-4 flex items-center">
-              <Key className="w-5 h-5 mr-2" />
+              <Shield className="w-5 h-5 mr-2" />
               API Credentials
             </h4>
             
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   API Key *
@@ -412,7 +550,7 @@ const UpmindSettingsManager = () => {
                     type={showApiKey ? 'text' : 'password'}
                     value={formData.apiKey}
                     onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
-                    placeholder="Enter your Upmind API key"
+                    placeholder="Your Upmind API key"
                     className="w-full border border-gray-300 rounded-md px-3 py-2 pr-10 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                   <button
@@ -421,9 +559,9 @@ const UpmindSettingsManager = () => {
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   >
                     {showApiKey ? (
-                      <EyeOff className="w-4 h-4 text-gray-400" />
+                      <EyeOff className="h-4 w-4 text-gray-400" />
                     ) : (
-                      <Eye className="w-4 h-4 text-gray-400" />
+                      <Eye className="h-4 w-4 text-gray-400" />
                     )}
                   </button>
                 </div>
@@ -435,9 +573,9 @@ const UpmindSettingsManager = () => {
                 </label>
                 <input
                   type="text"
-                  value={formData.brandId || ''}
+                  value={formData.brandId}
                   onChange={(e) => setFormData({ ...formData, brandId: e.target.value })}
-                  placeholder="Enter your Upmind Brand ID (optional, defaults to 'default')"
+                  placeholder="default"
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
@@ -473,7 +611,7 @@ const UpmindSettingsManager = () => {
                   type="url"
                   value={formData.baseUrl}
                   onChange={(e) => setFormData({ ...formData, baseUrl: e.target.value })}
-                  placeholder="https://api.upmind.com/v1"
+                  placeholder="https://my.hostwp.co/api/v1"
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
@@ -521,12 +659,10 @@ const UpmindSettingsManager = () => {
             </div>
           </div>
 
-          {/* Test Result */}
+          {/* Test Results */}
           {testResult && (
             <div className={`rounded-md p-4 ${
-              testResult.success 
-                ? 'bg-green-50 border border-green-200' 
-                : 'bg-red-50 border border-red-200'
+              testResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
             }`}>
               <div className="flex">
                 <div className="flex-shrink-0">
@@ -548,9 +684,11 @@ const UpmindSettingsManager = () => {
                     <p>{testResult.message}</p>
                     {testResult.details && (
                       <div className="mt-2 space-y-1">
-                        <p>Response Time: {testResult.details.responseTime}</p>
-                        <p>API Version: {testResult.details.version}</p>
-                        <p>Rate Limit: {testResult.details.rateLimit}</p>
+                        {Object.entries(testResult.details).map(([key, value]) => (
+                          <p key={key}>
+                            <span className="font-medium capitalize">{key.replace(/([A-Z])/g, ' $1')}:</span> {value}
+                          </p>
+                        ))}
                       </div>
                     )}
                   </div>
@@ -559,54 +697,8 @@ const UpmindSettingsManager = () => {
             </div>
           )}
 
-          {/* Validation Messages */}
-          {(!formData.name || !formData.apiKey || !formData.baseUrl) && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
-              <div className="flex">
-                <AlertCircle className="h-5 w-5 text-yellow-400 flex-shrink-0" />
-                <div className="ml-3">
-                  <h3 className="text-sm font-medium text-yellow-800">
-                    Required fields missing
-                  </h3>
-                  <div className="mt-2 text-sm text-yellow-700">
-                    <ul className="list-disc list-inside space-y-1">
-                      {!formData.name && <li>Configuration Name is required</li>}
-                      {!formData.apiKey && <li>API Key is required</li>}
-                      {!formData.baseUrl && <li>Base URL is required</li>}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Action Buttons */}
-          <div className="flex justify-between pt-4 border-t border-gray-200">
-            <div>
-              {editingConfig && (
-                <button
-                  onClick={() => {
-                    setEditingConfig(null);
-                    if (activeConfig) {
-                      setFormData({
-                        name: activeConfig.name,
-                        apiKey: activeConfig.apiKey,
-                        baseUrl: activeConfig.baseUrl,
-                        environment: activeConfig.environment,
-                        timeout: activeConfig.timeout,
-                        retryAttempts: activeConfig.retryAttempts,
-                        enableLogging: activeConfig.enableLogging,
-                        webhookSecret: activeConfig.webhookSecret,
-                        description: activeConfig.description
-                      });
-                    }
-                  }}
-                  className="btn-secondary"
-                >
-                  Cancel Edit
-                </button>
-              )}
-            </div>
+          <div className="flex items-center justify-between pt-4 border-t border-gray-200">
             <div className="flex space-x-3">
               <button
                 onClick={handleTestConnection}
@@ -618,40 +710,45 @@ const UpmindSettingsManager = () => {
                 ) : (
                   <TestTube className="w-4 h-4 mr-2" />
                 )}
-                Test Connection
+                {testingConnection ? 'Testing...' : 'Test Connection'}
               </button>
-              <button
-                onClick={() => {
-                  console.log('🔘 Button clicked! Form data:', formData);
-                  console.log('🔘 Button disabled?', saving || !formData.name || !formData.apiKey || !formData.baseUrl);
-                  console.log('🔘 Missing fields:', {
-                    name: !formData.name,
-                    apiKey: !formData.apiKey,
-                    baseUrl: !formData.baseUrl
-                  });
-                  handleSave();
-                }}
-                disabled={saving || !formData.name || !formData.apiKey || !formData.baseUrl}
-                className={`flex items-center ${
-                  saving || !formData.name || !formData.apiKey || !formData.baseUrl
-                    ? 'btn-secondary opacity-50 cursor-not-allowed' 
-                    : 'btn-primary'
-                }`}
-                title={
-                  !formData.name ? 'Name is required' :
-                  !formData.apiKey ? 'API Key is required' :
-                  !formData.baseUrl ? 'Base URL is required' :
-                  'Save configuration'
-                }
-              >
-                {saving ? (
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4 mr-2" />
-                )}
-                {editingConfig ? 'Update Configuration' : 'Save Configuration'}
-              </button>
+              
+              {editingConfig && (
+                <button
+                  onClick={() => {
+                    setEditingConfig(null);
+                    setFormData({
+                      name: '',
+                      apiKey: '',
+                      brandId: '',
+                      baseUrl: 'https://my.hostwp.co/api/v1',
+                      environment: 'production',
+                      timeout: 30000,
+                      retryAttempts: 3,
+                      enableLogging: true,
+                      webhookSecret: '',
+                      description: ''
+                    });
+                  }}
+                  className="btn-secondary"
+                >
+                  Cancel Edit
+                </button>
+              )}
             </div>
+            
+            <button
+              onClick={handleSave}
+              disabled={saving || !formData.name || !formData.apiKey || !formData.baseUrl}
+              className="btn-primary flex items-center"
+            >
+              {saving ? (
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4 mr-2" />
+              )}
+              {saving ? 'Saving...' : (editingConfig ? 'Update Configuration' : 'Save Configuration')}
+            </button>
           </div>
         </div>
       </div>
@@ -669,9 +766,10 @@ const UpmindSettingsManager = () => {
             <div className="mt-2 text-sm text-blue-700">
               <ul className="list-disc list-inside space-y-1">
                 <li>Get your API key from your Upmind dashboard under Settings → API</li>
-                <li>Use the correct API URL for your instance: https://my.hostwp.co/api/v1</li>
+                <li>Use the production URL for live environments: https://my.hostwp.co/api/v1</li>
                 <li>Test your connection before saving to ensure everything works correctly</li>
                 <li>Enable logging for debugging during development</li>
+                <li>The test connection will verify authentication and check available endpoints</li>
               </ul>
             </div>
           </div>
