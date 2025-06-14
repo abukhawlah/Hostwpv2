@@ -55,29 +55,20 @@ class UpmindHttpClient {
   constructor() {
     this.maxRetries = 3;
     this.retryDelay = 1000; // 1 second
+    this.useProxy = false; // Flag to use proxy for CORS issues
   }
   
-  async makeRequest(endpoint, options = {}) {
-    const config = UpmindApiConfig.getActiveConfig();
-    UpmindApiConfig.validateConfig(config);
+  configure(config) {
+    this.baseUrl = config.baseUrl?.replace(/\/$/, '') || '';
+    this.token = config.token || '';
+    this.brandId = config.brandId || 'default';
+    this.useProxy = false; // Reset proxy flag on new config
     
-    const url = `${config.baseUrl.replace(/\/$/, '')}${endpoint}`;
-    const defaultHeaders = {
-      'Authorization': `Bearer ${config.token}`,
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'X-Brand-ID': config.brandId
-    };
-    
-    const requestOptions = {
-      ...options,
-      headers: {
-        ...defaultHeaders,
-        ...options.headers
-      }
-    };
-    
-    return this.executeWithRetry(url, requestOptions);
+    console.log('[Upmind API] Configured:', {
+      baseUrl: this.baseUrl,
+      hasToken: !!this.token,
+      brandId: this.brandId
+    });
   }
   
   async executeWithRetry(url, options, attempt = 1) {
@@ -86,108 +77,325 @@ class UpmindHttpClient {
       
       const response = await fetch(url, options);
       
-      // Handle different response scenarios
       if (response.ok) {
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
           const data = await response.json();
-          console.log(`[Upmind API] Success:`, data);
+          console.log(`✅ [Upmind API] Success:`, { status: response.status, dataLength: JSON.stringify(data).length });
           return { success: true, data, status: response.status };
         } else {
           const text = await response.text();
+          console.log(`✅ [Upmind API] Success (text):`, { status: response.status, textLength: text.length });
           return { success: true, data: text, status: response.status };
         }
       }
-      
-      // Handle client and server errors
-      const errorData = await this.parseErrorResponse(response);
-      
-      // Don't retry client errors (4xx)
-      if (response.status >= 400 && response.status < 500) {
-        console.error(`[Upmind API] Client Error (${response.status}):`, errorData);
-        return {
-          success: false,
-          error: errorData.message || `Client error: ${response.status} ${response.statusText}`,
-          status: response.status,
-          details: errorData
-        };
+
+      // Handle HTTP errors
+      let errorData;
+      try {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          errorData = await response.json();
+        } else {
+          errorData = { message: await response.text() || response.statusText };
+        }
+      } catch {
+        errorData = { message: response.statusText || 'Unknown error' };
       }
-      
-      // Retry server errors (5xx) and network issues
-      if (attempt < this.maxRetries && (response.status >= 500 || !response.status)) {
-        console.warn(`[Upmind API] Server Error (${response.status}), retrying in ${this.retryDelay}ms...`);
-        await this.delay(this.retryDelay * attempt);
-        return this.executeWithRetry(url, options, attempt + 1);
-      }
-      
-      console.error(`[Upmind API] Server Error (${response.status}):`, errorData);
+
+      console.log(`❌ [Upmind API] HTTP Error:`, { 
+        status: response.status, 
+        statusText: response.statusText,
+        error: errorData 
+      });
+
       return {
         success: false,
-        error: errorData.message || `Server error: ${response.status} ${response.statusText}`,
+        error: errorData.message || `API error: ${response.status} ${response.statusText}`,
         status: response.status,
         details: errorData
       };
-      
+
     } catch (error) {
-      console.error(`[Upmind API] Network Error (attempt ${attempt}):`, error);
-      
-      // Detailed error analysis
-      let errorType = 'Unknown';
-      if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-        errorType = 'CORS or Network';
-        console.error('🚫 This is likely a CORS issue or the server is unreachable');
-        console.error('💡 Check: 1) Server is running, 2) CORS headers, 3) SSL certificate, 4) API token');
-      } else if (error.name === 'AbortError') {
-        errorType = 'Timeout';
-      } else if (error.message.includes('SSL') || error.message.includes('certificate')) {
-        errorType = 'SSL/Certificate';
-      }
-      
-      console.error(`🔍 Error Type: ${errorType}`);
-      console.error(`🔍 Error Details:`, {
+      console.log(`❌ [Upmind API] Network Error:`, { 
+        message: error.message, 
         name: error.name,
-        message: error.message,
-        stack: error.stack?.split('\n')[0]
+        attempt 
       });
-      
-      // Retry network errors
-      if (attempt < this.maxRetries) {
-        console.warn(`[Upmind API] Network Error, retrying in ${this.retryDelay}ms...`);
-        await this.delay(this.retryDelay * attempt);
+
+      // Detect CORS or network issues and try proxy
+      if (this.isCorsOrNetworkError(error) && !this.useProxy && attempt === 1) {
+        console.log(`🔄 [Upmind API] Detected CORS/Network issue, trying proxy...`);
+        return this.executeViaProxy(url, options);
+      }
+
+      // Retry logic for other errors
+      if (attempt < this.maxRetries && this.shouldRetry(error)) {
+        console.log(`🔄 [Upmind API] Retrying in ${this.retryDelay}ms...`);
+        await this.delay(this.retryDelay);
         return this.executeWithRetry(url, options, attempt + 1);
       }
-      
+
+      // Analyze and return detailed error
+      const errorAnalysis = this.analyzeError(error);
       return {
         success: false,
-        error: `${errorType} error: ${error.message}`,
-        details: { ...error, errorType }
+        error: `${errorAnalysis.type}: ${error.message}`,
+        details: errorAnalysis
       };
     }
   }
   
-  async parseErrorResponse(response) {
+  async executeViaProxy(originalUrl, originalOptions) {
     try {
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        return await response.json();
+      // Extract endpoint from the original URL
+      const endpoint = originalUrl.replace(this.baseUrl, '');
+      
+      const proxyPayload = {
+        endpoint,
+        baseUrl: this.baseUrl,
+        token: this.token,
+        brandId: this.brandId,
+        method: originalOptions.method || 'GET',
+        body: originalOptions.body
+      };
+
+      console.log(`[Upmind Proxy] Calling proxy with:`, { endpoint, method: proxyPayload.method });
+
+      const proxyResponse = await fetch('/api/upmind-proxy', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(proxyPayload)
+      });
+
+      const proxyResult = await proxyResponse.json();
+      
+      if (proxyResult.success) {
+        console.log(`✅ [Upmind Proxy] Success:`, { status: proxyResult.status });
+        this.useProxy = true; // Use proxy for future requests
+        return proxyResult;
       } else {
-        const text = await response.text();
-        return { message: text || response.statusText };
+        console.log(`❌ [Upmind Proxy] Failed:`, proxyResult);
+        return proxyResult;
       }
-    } catch {
-      return { message: response.statusText || 'Unknown error' };
+
+    } catch (proxyError) {
+      console.log(`❌ [Upmind Proxy] Error:`, proxyError);
+      return {
+        success: false,
+        error: `Proxy error: ${proxyError.message}`,
+        details: { proxyError: proxyError.message }
+      };
     }
+  }
+  
+  isCorsOrNetworkError(error) {
+    const corsIndicators = [
+      'Failed to fetch',
+      'CORS',
+      'Cross-Origin',
+      'Network request failed',
+      'TypeError: Failed to fetch',
+      'net::ERR_FAILED'
+    ];
+    
+    return corsIndicators.some(indicator => 
+      error.message.includes(indicator) || error.name.includes(indicator)
+    );
+  }
+  
+  shouldRetry(error) {
+    const retryableErrors = [
+      'timeout',
+      'ECONNRESET',
+      'ENOTFOUND',
+      'ECONNREFUSED',
+      'socket hang up'
+    ];
+    
+    return retryableErrors.some(retryable => 
+      error.message.toLowerCase().includes(retryable.toLowerCase())
+    );
+  }
+  
+  analyzeError(error) {
+    const message = error.message.toLowerCase();
+    
+    if (message.includes('failed to fetch') || message.includes('cors')) {
+      return {
+        type: 'CORS or Network error',
+        likely_cause: 'Cross-origin request blocked or network connectivity issue',
+        suggestions: [
+          'Check if the API server allows requests from your domain',
+          'Verify the API server is running and accessible',
+          'Check network connectivity'
+        ]
+      };
+    }
+    
+    if (message.includes('timeout')) {
+      return {
+        type: 'Timeout error',
+        likely_cause: 'Request took too long to complete',
+        suggestions: ['Check API server performance', 'Verify network stability']
+      };
+    }
+    
+    if (message.includes('ssl') || message.includes('certificate')) {
+      return {
+        type: 'SSL/Certificate error',
+        likely_cause: 'SSL certificate issue with the API server',
+        suggestions: ['Check SSL certificate validity', 'Verify HTTPS configuration']
+      };
+    }
+    
+    return {
+      type: 'Unknown network error',
+      likely_cause: 'Unspecified network or connectivity issue',
+      suggestions: ['Check network connectivity', 'Verify API server status']
+    };
   }
   
   delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+  
+  async testConnectivity(baseUrl) {
+    console.log(`🔍 Testing connectivity to: ${baseUrl}`);
+    
+    try {
+      // Try a simple HEAD request first
+      const testUrl = baseUrl.replace(/\/api\/v1$/, ''); // Remove API path for basic connectivity test
+      const response = await fetch(testUrl, { 
+        method: 'HEAD',
+        mode: 'no-cors' // This bypasses CORS for connectivity test
+      });
+      
+      console.log(`✅ Basic connectivity test completed`);
+      return true;
+    } catch (error) {
+      console.log(`❌ Basic connectivity test failed:`, error.message);
+      return false;
+    }
+  }
+  
+  async makeRequest(endpoint, options = {}) {
+    if (!this.baseUrl || !this.token) {
+      throw new Error('Upmind API not configured. Please set baseUrl and token.');
+    }
+
+    const url = `${this.baseUrl}${endpoint}`;
+    const requestOptions = {
+      method: options.method || 'GET',
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-Brand-ID': this.brandId,
+        ...options.headers
+      }
+    };
+
+    if (options.body) {
+      requestOptions.body = typeof options.body === 'string' ? options.body : JSON.stringify(options.body);
+    }
+
+    // If we've determined to use proxy, go straight to proxy
+    if (this.useProxy) {
+      return this.executeViaProxy(url, requestOptions);
+    }
+
+    return this.executeWithRetry(url, requestOptions);
+  }
+  
+  async getProducts() {
+    console.log('🔍 Fetching products from Upmind API...');
+    
+    // Test basic connectivity first
+    await this.testConnectivity(this.baseUrl);
+    
+    // List of endpoints to try for products
+    const endpoints = [
+      '/products',
+      '/services', 
+      '/hosting-plans',
+      '/plans',
+      '/service-plans',
+      '/brands/default/products',
+      '/brands/default/services',
+      '/brands/default/plans'
+    ];
+
+    for (const endpoint of endpoints) {
+      try {
+        console.log(`🔍 Trying API endpoint: ${endpoint}...`);
+        const result = await this.makeRequest(endpoint);
+        
+        if (result.success && result.data) {
+          // Check if we got an array of products/services
+          const products = Array.isArray(result.data) ? result.data : 
+                          result.data.data ? result.data.data : 
+                          result.data.products ? result.data.products :
+                          result.data.services ? result.data.services : null;
+          
+          if (products && Array.isArray(products) && products.length > 0) {
+            console.log(`✅ Found ${products.length} products from ${endpoint}`);
+            return products;
+          }
+        }
+        
+        console.log(`❌ ${endpoint} failed:`, result.error || 'No products found');
+        
+      } catch (error) {
+        console.log(`❌ ${endpoint} error:`, error.message);
+      }
+    }
+
+    throw new Error('No products found in Upmind. Tried multiple endpoints but none returned product data.');
+  }
+  
+  async getProduct(id) {
+    return this.makeRequest(`/products/${id}`);
+  }
+  
+  async createProduct(productData) {
+    return this.makeRequest('/products', {
+      method: 'POST',
+      body: productData
+    });
+  }
+  
+  async updateProduct(id, productData) {
+    return this.makeRequest(`/products/${id}`, {
+      method: 'PUT',
+      body: productData
+    });
+  }
+  
+  async deleteProduct(id) {
+    return this.makeRequest(`/products/${id}`, {
+      method: 'DELETE'
+    });
   }
 }
 
 // Main Upmind API Service
 class UpmindApiService {
   constructor() {
-    this.client = new UpmindHttpClient();
+    this.client = upmindAPI; // Use the singleton instance
+  }
+  
+  // Configuration method
+  configure(config) {
+    const validation = validateApiConfig(config);
+    if (!validation.isValid) {
+      throw new Error(`Invalid configuration: ${validation.errors.join(', ')}`);
+    }
+    
+    this.client.configure(config);
+    return { success: true };
   }
   
   // Domain Management
@@ -245,142 +453,19 @@ class UpmindApiService {
   
   // Product Management
   async getProducts() {
-    // First, let's test basic connectivity
-    const config = UpmindApiConfig.getActiveConfig();
-    console.log('🔧 Testing connectivity to:', config.baseUrl);
-    
-    try {
-      // Simple connectivity test without authentication
-      const testResponse = await fetch(config.baseUrl.replace('/api/v1', ''), { 
-        method: 'HEAD',
-        mode: 'no-cors' 
-      });
-      console.log('🌐 Basic connectivity test completed');
-    } catch (testError) {
-      console.error('🚫 Basic connectivity failed:', testError);
-    }
-    
-    // Try different possible endpoints for Upmind products
-    const possibleEndpoints = [
-      '/products',
-      '/services', 
-      '/hosting-plans',
-      '/plans',
-      '/service-plans',
-      '/brands/default/products',
-      '/brands/default/services',
-      '/brands/default/plans'
-    ];
-    
-    for (const endpoint of possibleEndpoints) {
-      try {
-        console.log(`🚀 Trying API endpoint: ${endpoint}...`);
-        const response = await this.client.makeRequest(endpoint);
-        console.log(`🔄 Response from ${endpoint}:`, response);
-        
-        if (response.success && response.data && Array.isArray(response.data) && response.data.length > 0) {
-          console.log(`✅ Found products at ${endpoint}!`);
-          console.log('✨ Transforming products data...');
-          const transformedData = this.transformProductsResult(response.data);
-          console.log('🎯 Transformed products:', transformedData);
-          
-          return {
-            ...response,
-            data: transformedData
-          };
-        } else if (response.success && response.data && Array.isArray(response.data) && response.data.length === 0) {
-          console.log(`⚠️ ${endpoint} returned empty array - continuing to try other endpoints...`);
-        } else {
-          console.log(`❌ ${endpoint} failed:`, response);
-        }
-      } catch (error) {
-        console.error(`💥 Exception trying ${endpoint}:`, error);
-      }
-    }
-    
-    // If we get here, none of the endpoints worked
-    console.error('🚫 All product endpoints failed');
-    return {
-      success: false,
-      error: 'No products found. Tried multiple endpoints: ' + possibleEndpoints.join(', '),
-      details: { attemptedEndpoints: possibleEndpoints }
-    };
+    return this.client.getProducts();
   }
   
   async createProduct(productData) {
-    if (!productData || typeof productData !== 'object') {
-      return {
-        success: false,
-        error: 'Product data is required and must be an object'
-      };
-    }
-    
-    try {
-      const validatedData = this.validateProductData(productData);
-      
-      return await this.client.makeRequest('/products', {
-        method: 'POST',
-        body: JSON.stringify(validatedData)
-      });
-    } catch (error) {
-      return {
-        success: false,
-        error: `Product creation failed: ${error.message}`,
-        details: error
-      };
-    }
+    return this.client.createProduct(productData);
   }
   
   async updateProduct(productId, productData) {
-    if (!productId) {
-      return {
-        success: false,
-        error: 'Product ID is required'
-      };
-    }
-    
-    if (!productData || typeof productData !== 'object') {
-      return {
-        success: false,
-        error: 'Product data is required and must be an object'
-      };
-    }
-    
-    try {
-      const validatedData = this.validateProductData(productData, false); // Allow partial updates
-      
-      return await this.client.makeRequest(`/products/${productId}`, {
-        method: 'PUT',
-        body: JSON.stringify(validatedData)
-      });
-    } catch (error) {
-      return {
-        success: false,
-        error: `Product update failed: ${error.message}`,
-        details: error
-      };
-    }
+    return this.client.updateProduct(productId, productData);
   }
   
   async deleteProduct(productId) {
-    if (!productId) {
-      return {
-        success: false,
-        error: 'Product ID is required'
-      };
-    }
-    
-    try {
-      return await this.client.makeRequest(`/products/${productId}`, {
-        method: 'DELETE'
-      });
-    } catch (error) {
-      return {
-        success: false,
-        error: `Product deletion failed: ${error.message}`,
-        details: error
-      };
-    }
+    return this.client.deleteProduct(productId);
   }
   
   // Client Management

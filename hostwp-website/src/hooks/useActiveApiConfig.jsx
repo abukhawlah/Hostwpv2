@@ -8,6 +8,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { getActiveApiConfig, validateApiConfig } from '../services/upmind';
+import upmindService from '../services/upmind';
 
 // Create the API Configuration Context
 const ApiConfigContext = createContext(null);
@@ -43,6 +44,8 @@ export const ApiConfigProvider = ({ children }) => {
             // Validate the active configuration
             try {
               validateApiConfig(active);
+              // Configure the Upmind service with the active config
+              upmindService.configure(active);
               setIsValid(true);
             } catch (validationError) {
               console.warn('Active API configuration is invalid:', validationError.message);
@@ -87,6 +90,9 @@ export const ApiConfigProvider = ({ children }) => {
       // Validate the configuration before switching
       validateApiConfig(config);
 
+      // Configure the Upmind service with the new config
+      upmindService.configure(config);
+
       // Save as active configuration
       localStorage.setItem('hostwp_active_api_config', configId);
       setActiveConfig(config);
@@ -129,6 +135,8 @@ export const ApiConfigProvider = ({ children }) => {
       // If this is the first configuration, make it active
       if (allConfigs.length === 0) {
         localStorage.setItem('hostwp_active_api_config', configWithId.id);
+        // Configure the Upmind service with the new config
+        upmindService.configure(configWithId);
         setActiveConfig(configWithId);
         setIsValid(true);
       }
@@ -171,6 +179,8 @@ export const ApiConfigProvider = ({ children }) => {
 
       // Update active config if it's the one being updated
       if (activeConfig && activeConfig.id === configId) {
+        // Configure the Upmind service with the updated config
+        upmindService.configure(updatedConfig);
         setActiveConfig(updatedConfig);
         setIsValid(true);
       }
