@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 
 const UpmindSettingsManager = () => {
+  console.log('🚨🚨🚨 UPMIND SETTINGS MANAGER LOADED - BUILD TIME:', new Date().toISOString(), '🚨🚨🚨');
+  
   const [showApiKey, setShowApiKey] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
   const [testResult, setTestResult] = useState(null);
@@ -150,7 +152,7 @@ const UpmindSettingsManager = () => {
                 <Settings className="h-6 w-6 text-blue-600" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">Upmind API Settings</h2>
+                <h2 className="text-xl font-semibold text-gray-900">Upmind API Settings v2.0</h2>
                 <p className="text-sm text-gray-600">Configure your Upmind API connection</p>
               </div>
             </div>
