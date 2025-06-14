@@ -152,15 +152,14 @@ class UpmindHttpClient {
       const endpoint = originalUrl.replace(this.baseUrl, '');
       
       const proxyPayload = {
-        endpoint,
         baseUrl: this.baseUrl,
         token: this.token,
-        brandId: this.brandId,
+        endpoint: endpoint,
         method: originalOptions.method || 'GET',
-        body: originalOptions.body
+        body: originalOptions.body ? JSON.parse(originalOptions.body) : undefined
       };
 
-      console.log(`[Upmind Proxy] Calling proxy with:`, { endpoint, method: proxyPayload.method });
+      console.log(`🔄 [Upmind Proxy] Calling proxy with:`, { endpoint, method: proxyPayload.method });
 
       const proxyResponse = await fetch('/api/upmind-proxy', {
         method: 'POST',
@@ -511,7 +510,38 @@ class UpmindApiService {
 
   // Product Management
   async getProducts() {
-    return this.client.getProducts();
+    try {
+      console.log('🔍 UpmindApiService: Starting product fetch...');
+      console.log('🔧 Current client config:', {
+        baseUrl: this.client.baseUrl,
+        hasToken: !!this.client.token,
+        brandId: this.client.brandId
+      });
+      
+      // Check if client is configured
+      if (!this.client.baseUrl || !this.client.token) {
+        throw new Error('API client not configured. Please check your API settings.');
+      }
+      
+      const products = await this.client.getProducts();
+      console.log('✅ UpmindApiService: Products fetched successfully:', products?.length || 0);
+      
+      // Transform and return the products
+      const transformedProducts = this.transformProductsResult(products);
+      
+      return {
+        success: true,
+        data: transformedProducts,
+        count: transformedProducts?.length || 0
+      };
+    } catch (error) {
+      console.error('❌ UpmindApiService: Error fetching products:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to fetch products from Upmind',
+        details: error
+      };
+    }
   }
 
   async createProduct(productData) {

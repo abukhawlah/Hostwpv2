@@ -1,8 +1,11 @@
+// Vercel serverless function to proxy Upmind API requests
+// This bypasses CORS issues by making server-side requests
+
 export default async function handler(req, res) {
-  // Enable CORS for our domain
+  // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, Accept, X-Brand-ID');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
@@ -11,72 +14,75 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { endpoint, baseUrl, token, brandId, method = 'GET', body } = req.body;
-
-    if (!endpoint || !baseUrl || !token) {
+    // Extract Upmind API details from request
+    const { baseUrl, token, endpoint, method = 'GET', body } = req.body || {};
+    
+    if (!baseUrl || !token || !endpoint) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required parameters: endpoint, baseUrl, token'
+        error: 'Missing required parameters: baseUrl, token, endpoint'
       });
     }
 
-    const url = `${baseUrl.replace(/\/$/, '')}${endpoint}`;
+    // Construct the full URL
+    const fullUrl = `${baseUrl}${endpoint}`;
     
-    const options = {
-      method,
+    // Prepare fetch options
+    const fetchOptions = {
+      method: method,
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'X-Brand-ID': brandId || 'default'
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
       }
     };
 
-    if (body && method !== 'GET') {
-      options.body = typeof body === 'string' ? body : JSON.stringify(body);
+    // Add body for POST/PUT requests
+    if (body && (method === 'POST' || method === 'PUT')) {
+      fetchOptions.body = JSON.stringify(body);
     }
 
-    console.log(`[Upmind Proxy] ${method} ${url}`);
+    console.log(`🔍 Proxying ${method} request to: ${fullUrl}`);
+
+    // Make the request to Upmind API
+    const response = await fetch(fullUrl, fetchOptions);
     
-    const response = await fetch(url, options);
+    console.log(`📡 Upmind API Response Status: ${response.status}`);
     
+    // Get response data
+    let data;
+    const contentType = response.headers.get('content-type');
+    
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      data = await response.text();
+    }
+
+    console.log(`📦 Upmind API Response Data:`, data);
+
+    // Return the response
     if (response.ok) {
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        const data = await response.json();
-        return res.status(200).json({ success: true, data, status: response.status });
-      } else {
-        const text = await response.text();
-        return res.status(200).json({ success: true, data: text, status: response.status });
-      }
+      res.status(200).json({
+        success: true,
+        data: data,
+        status: response.status
+      });
+    } else {
+      res.status(response.status).json({
+        success: false,
+        error: `Upmind API Error: ${response.status} ${response.statusText}`,
+        data: data,
+        status: response.status
+      });
     }
-
-    // Handle errors
-    let errorData;
-    try {
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        errorData = await response.json();
-      } else {
-        errorData = { message: await response.text() || response.statusText };
-      }
-    } catch {
-      errorData = { message: response.statusText || 'Unknown error' };
-    }
-
-    return res.status(response.status).json({
-      success: false,
-      error: errorData.message || `API error: ${response.status} ${response.statusText}`,
-      status: response.status,
-      details: errorData
-    });
 
   } catch (error) {
-    console.error('[Upmind Proxy] Error:', error);
-    return res.status(500).json({
+    console.error('❌ Proxy Error:', error);
+    res.status(500).json({
       success: false,
-      error: `Proxy error: ${error.message}`,
-      details: error
+      error: `Proxy Error: ${error.message}`,
+      details: error.toString()
     });
   }
 } 
