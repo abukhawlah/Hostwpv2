@@ -32,14 +32,17 @@ const UpmindSettingsManager = () => {
   const [editingConfig, setEditingConfig] = useState(null);
 
   const { 
-    configs, 
+    allConfigs: configs, 
     activeConfig, 
-    setActiveConfig, 
-    addConfig, 
-    updateConfig, 
-    deleteConfig,
-    isReady 
+    switchConfiguration, 
+    addConfiguration: addConfig, 
+    updateConfiguration: updateConfig, 
+    deleteConfiguration: deleteConfig,
+    isValid,
+    loading
   } = useActiveApiConfig();
+  
+  const isReady = !loading && !!activeConfig && isValid;
 
   const [formData, setFormData] = useState({
     name: '',
@@ -87,19 +90,25 @@ const UpmindSettingsManager = () => {
         description: formData.description
       };
 
+      let result;
       if (editingConfig) {
-        await updateConfig(editingConfig.id, configData);
+        result = await updateConfig(editingConfig.id, configData);
         setEditingConfig(null);
       } else if (activeConfig) {
-        await updateConfig(activeConfig.id, configData);
+        result = await updateConfig(activeConfig.id, configData);
       } else {
-        await addConfig(configData);
+        result = await addConfig(configData);
+        
+        // If this is a new configuration, automatically activate it
+        if (result && result.success && result.config) {
+          await switchConfiguration(result.config.id);
+        }
       }
       
       // Show success message
       setTestResult({
         success: true,
-        message: 'Configuration saved successfully!'
+        message: 'Configuration saved and activated successfully!'
       });
       
       setTimeout(() => setTestResult(null), 3000);
@@ -265,7 +274,7 @@ const UpmindSettingsManager = () => {
                   <div className="flex items-center space-x-2">
                     {activeConfig?.id !== config.id && (
                       <button
-                        onClick={() => setActiveConfig(config.id)}
+                        onClick={() => switchConfiguration(config.id)}
                         className="btn-secondary text-sm"
                       >
                         Activate
