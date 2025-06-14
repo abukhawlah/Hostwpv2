@@ -6,8 +6,6 @@ import { SiteSettingsProvider } from './hooks/useSiteSettings';
 import { ApiConfigProvider } from './hooks/useActiveApiConfig.jsx';
 import AdminDashboard from './components/admin/AdminDashboard';
 import ContentManager from './components/admin/ContentManager';
-import HostingPlansManager from './components/admin/HostingPlansManager';
-import DomainsManager from './components/admin/DomainsManager';
 import OrdersManager from './components/admin/OrdersManager';
 import CustomersManager from './components/admin/CustomersManager';
 import InvoicesManager from './components/admin/InvoicesManager';
@@ -84,8 +82,6 @@ function App() {
             }>
               <Route index element={<AdminDashboard />} />
               <Route path="content" element={<ContentManager />} />
-              <Route path="hosting-plans" element={<HostingPlansManager />} />
-              <Route path="domains" element={<DomainsManager />} />
               <Route path="orders" element={<OrdersManager />} />
               <Route path="customers" element={<CustomersManager />} />
               <Route path="invoices" element={<InvoicesManager />} />
