@@ -44,6 +44,7 @@ const UpmindSettingsManager = () => {
   const [formData, setFormData] = useState({
     name: '',
     apiKey: '',
+    brandId: '',
     baseUrl: 'https://api.upmind.com/v1',
     environment: 'production',
     timeout: 30000,
@@ -57,7 +58,8 @@ const UpmindSettingsManager = () => {
     if (activeConfig) {
       setFormData({
         name: activeConfig.name || '',
-        apiKey: activeConfig.apiKey || '',
+        apiKey: activeConfig.apiKey || activeConfig.token || '',
+        brandId: activeConfig.brandId || '',
         baseUrl: activeConfig.baseUrl || 'https://api.upmind.com/v1',
         environment: activeConfig.environment || 'production',
         timeout: activeConfig.timeout || 30000,
@@ -72,13 +74,26 @@ const UpmindSettingsManager = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
+      // Map form data to the expected API config format
+      const configData = {
+        name: formData.name,
+        baseUrl: formData.baseUrl,
+        token: formData.apiKey, // Map apiKey to token (required by validation)
+        brandId: formData.brandId || 'default', // Add brandId (required by validation)
+        label: formData.name, // Add label field
+        environment: formData.environment,
+        timeout: formData.timeout,
+        retryAttempts: formData.retryAttempts,
+        description: formData.description
+      };
+
       if (editingConfig) {
-        await updateConfig(editingConfig.id, formData);
+        await updateConfig(editingConfig.id, configData);
         setEditingConfig(null);
       } else if (activeConfig) {
-        await updateConfig(activeConfig.id, formData);
+        await updateConfig(activeConfig.id, configData);
       } else {
-        await addConfig(formData);
+        await addConfig(configData);
       }
       
       // Show success message
@@ -383,6 +398,19 @@ const UpmindSettingsManager = () => {
                     )}
                   </button>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Brand ID
+                </label>
+                <input
+                  type="text"
+                  value={formData.brandId || ''}
+                  onChange={(e) => setFormData({ ...formData, brandId: e.target.value })}
+                  placeholder="Enter your Upmind Brand ID (optional, defaults to 'default')"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
               </div>
 
               <div>
