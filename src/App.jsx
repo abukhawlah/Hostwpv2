@@ -26,6 +26,17 @@ function App() {
     <Router>
         <div className="min-h-screen bg-gray-50">
           <Routes>
+            {/* Debug route to test basic functionality */}
+            <Route path="/debug" element={
+              <div style={{padding: '20px', backgroundColor: 'lightgreen'}}>
+                <h1>DEBUG MODE</h1>
+                <p>If you see this, React Router is working!</p>
+                <p>Time: {new Date().toLocaleString()}</p>
+                <a href="/test" style={{color: 'blue'}}>Go to /test</a><br/>
+                <a href="/admin/upmind-settings" style={{color: 'blue'}}>Go to /admin/upmind-settings</a>
+              </div>
+            } />
+            
             {/* Public routes */}
             <Route path="/" element={
               <>
