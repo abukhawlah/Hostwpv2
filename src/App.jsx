@@ -81,8 +81,10 @@ function App() {
               <Route path="customers" element={<CustomersManager />} />
               <Route path="invoices" element={<InvoicesManager />} />
               <Route path="settings" element={<UpmindSettingsManager />} />
-              <Route path="upmind-settings" element={<UpmindSettingsManager />} />
             </Route>
+            
+            {/* Direct test route bypassing AdminLayout */}
+            <Route path="/admin/upmind-settings" element={<UpmindSettingsManager />} />
           </Routes>
         </div>
       </Router>
