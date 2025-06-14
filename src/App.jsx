@@ -12,8 +12,6 @@ import WhiteGloveSupport from './pages/WhiteGloveSupport';
 
 // Import admin components
 import AdminLayout from './components/admin/AdminLayout';
-import HostingPlansManager from './components/admin/HostingPlansManager';
-import DomainsManager from './components/admin/DomainsManager';
 import OrdersManager from './components/admin/OrdersManager';
 import CustomersManager from './components/admin/CustomersManager';
 import InvoicesManager from './components/admin/InvoicesManager';
@@ -74,9 +72,7 @@ function App() {
 
             {/* Admin routes */}
             <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<HostingPlansManager />} />
-              <Route path="hosting-plans" element={<HostingPlansManager />} />
-              <Route path="domains" element={<DomainsManager />} />
+              <Route index element={<div className="p-6"><h1>Admin Dashboard</h1><p>Welcome to the admin panel</p></div>} />
               <Route path="orders" element={<OrdersManager />} />
               <Route path="customers" element={<CustomersManager />} />
               <Route path="invoices" element={<InvoicesManager />} />
@@ -85,6 +81,9 @@ function App() {
             
             {/* Direct test route bypassing AdminLayout */}
             <Route path="/admin/upmind-settings" element={<UpmindSettingsManager />} />
+            
+            {/* Ultra basic test route */}
+            <Route path="/test" element={<div style={{padding: '20px', backgroundColor: 'yellow'}}><h1>Ultra Basic Test</h1><p>This is just a div with no imports</p></div>} />
           </Routes>
         </div>
       </Router>
