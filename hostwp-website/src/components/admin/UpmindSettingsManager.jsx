@@ -559,6 +559,27 @@ const UpmindSettingsManager = () => {
             </div>
           )}
 
+          {/* Validation Messages */}
+          {(!formData.name || !formData.apiKey || !formData.baseUrl) && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+              <div className="flex">
+                <AlertCircle className="h-5 w-5 text-yellow-400 flex-shrink-0" />
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-yellow-800">
+                    Required fields missing
+                  </h3>
+                  <div className="mt-2 text-sm text-yellow-700">
+                    <ul className="list-disc list-inside space-y-1">
+                      {!formData.name && <li>Configuration Name is required</li>}
+                      {!formData.apiKey && <li>API Key is required</li>}
+                      {!formData.baseUrl && <li>Base URL is required</li>}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Action Buttons */}
           <div className="flex justify-between pt-4 border-t border-gray-200">
             <div>
@@ -600,9 +621,28 @@ const UpmindSettingsManager = () => {
                 Test Connection
               </button>
               <button
-                onClick={handleSave}
+                onClick={() => {
+                  console.log('🔘 Button clicked! Form data:', formData);
+                  console.log('🔘 Button disabled?', saving || !formData.name || !formData.apiKey || !formData.baseUrl);
+                  console.log('🔘 Missing fields:', {
+                    name: !formData.name,
+                    apiKey: !formData.apiKey,
+                    baseUrl: !formData.baseUrl
+                  });
+                  handleSave();
+                }}
                 disabled={saving || !formData.name || !formData.apiKey || !formData.baseUrl}
-                className="btn-primary flex items-center"
+                className={`flex items-center ${
+                  saving || !formData.name || !formData.apiKey || !formData.baseUrl
+                    ? 'btn-secondary opacity-50 cursor-not-allowed' 
+                    : 'btn-primary'
+                }`}
+                title={
+                  !formData.name ? 'Name is required' :
+                  !formData.apiKey ? 'API Key is required' :
+                  !formData.baseUrl ? 'Base URL is required' :
+                  'Save configuration'
+                }
               >
                 {saving ? (
                   <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
