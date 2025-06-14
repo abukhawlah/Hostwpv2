@@ -48,7 +48,7 @@ const UpmindSettingsManager = () => {
     name: '',
     apiKey: '',
     brandId: '',
-    baseUrl: 'https://api.upmind.com/v1',
+    baseUrl: 'https://my.hostwp.co/api/v1',
     environment: 'production',
     timeout: 30000,
     retryAttempts: 3,
@@ -63,7 +63,7 @@ const UpmindSettingsManager = () => {
         name: activeConfig.name || '',
         apiKey: activeConfig.apiKey || activeConfig.token || '',
         brandId: activeConfig.brandId || '',
-        baseUrl: activeConfig.baseUrl || 'https://api.upmind.com/v1',
+        baseUrl: activeConfig.baseUrl || 'https://my.hostwp.co/api/v1',
         environment: activeConfig.environment || 'production',
         timeout: activeConfig.timeout || 30000,
         retryAttempts: activeConfig.retryAttempts || 3,
@@ -609,7 +609,7 @@ const UpmindSettingsManager = () => {
             <div className="mt-2 text-sm text-blue-700">
               <ul className="list-disc list-inside space-y-1">
                 <li>Get your API key from your Upmind dashboard under Settings → API</li>
-                <li>Use the production URL for live environments: https://api.upmind.com/v1</li>
+                <li>Use the correct API URL for your instance: https://my.hostwp.co/api/v1</li>
                 <li>Test your connection before saving to ensure everything works correctly</li>
                 <li>Enable logging for debugging during development</li>
               </ul>
@@ -638,7 +638,7 @@ const ConfigurationModal = ({ isOpen, onClose, onSubmit, title }) => {
   const [formData, setFormData] = useState({
     name: '',
     apiKey: '',
-    baseUrl: 'https://api.upmind.com/v1',
+    baseUrl: 'https://my.hostwp.co/api/v1',
     environment: 'production',
     timeout: 30000,
     retryAttempts: 3,
@@ -655,7 +655,7 @@ const ConfigurationModal = ({ isOpen, onClose, onSubmit, title }) => {
     setFormData({
       name: '',
       apiKey: '',
-      baseUrl: 'https://api.upmind.com/v1',
+      baseUrl: 'https://my.hostwp.co/api/v1',
       environment: 'production',
       timeout: 30000,
       retryAttempts: 3,
