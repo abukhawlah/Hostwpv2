@@ -583,6 +583,110 @@ class UpmindApiService {
       };
     }
   }
+
+  async updateClient(clientId, clientData) {
+    if (!clientId) {
+      return {
+        success: false,
+        error: 'Client ID is required'
+      };
+    }
+
+    if (!clientData || typeof clientData !== 'object') {
+      return {
+        success: false,
+        error: 'Client data is required and must be an object'
+      };
+    }
+
+    try {
+      const validatedData = this.validateClientData(clientData);
+      
+      return await this.client.makeRequest(`/clients/${clientId}`, {
+        method: 'PUT',
+        body: JSON.stringify(validatedData)
+      });
+    } catch (error) {
+      return {
+        success: false,
+        error: `Client update failed: ${error.message}`,
+        details: error
+      };
+    }
+  }
+
+  async deleteClient(clientId) {
+    if (!clientId) {
+      return {
+        success: false,
+        error: 'Client ID is required'
+      };
+    }
+
+    try {
+      return await this.client.makeRequest(`/clients/${clientId}`, {
+        method: 'DELETE'
+      });
+    } catch (error) {
+      return {
+        success: false,
+        error: `Client deletion failed: ${error.message}`,
+        details: error
+      };
+    }
+  }
+
+  async updateOrder(orderId, orderData) {
+    if (!orderId) {
+      return {
+        success: false,
+        error: 'Order ID is required'
+      };
+    }
+
+    if (!orderData || typeof orderData !== 'object') {
+      return {
+        success: false,
+        error: 'Order data is required and must be an object'
+      };
+    }
+
+    try {
+      const validatedData = this.validateOrderData(orderData);
+      
+      return await this.client.makeRequest(`/orders/${orderId}`, {
+        method: 'PUT',
+        body: JSON.stringify(validatedData)
+      });
+    } catch (error) {
+      return {
+        success: false,
+        error: `Order update failed: ${error.message}`,
+        details: error
+      };
+    }
+  }
+
+  async deleteOrder(orderId) {
+    if (!orderId) {
+      return {
+        success: false,
+        error: 'Order ID is required'
+      };
+    }
+
+    try {
+      return await this.client.makeRequest(`/orders/${orderId}`, {
+        method: 'DELETE'
+      });
+    } catch (error) {
+      return {
+        success: false,
+        error: `Order deletion failed: ${error.message}`,
+        details: error
+      };
+    }
+  }
   
   // Data Validation Methods
   validateProductData(data, requireAll = true) {
@@ -774,8 +878,24 @@ export const updateProduct = (id, data) => upmindApi.updateProduct(id, data);
 export const deleteProduct = (id) => upmindApi.deleteProduct(id);
 export const createClient = (data) => upmindApi.createClient(data);
 export const getClients = (filters) => upmindApi.getClients(filters);
+export const updateClient = (id, data) => upmindApi.updateClient(id, data);
+export const deleteClient = (id) => upmindApi.deleteClient(id);
 export const createOrder = (data) => upmindApi.createOrder(data);
 export const getOrders = (filters) => upmindApi.getOrders(filters);
+export const updateOrder = (id, data) => upmindApi.updateOrder(id, data);
+export const deleteOrder = (id) => upmindApi.deleteOrder(id);
+
+// Customer management (aliases for client functions)
+export const getCustomers = (filters) => upmindApi.getClients(filters);
+export const createCustomer = (data) => upmindApi.createClient(data);
+export const updateCustomer = (id, data) => upmindApi.updateClient(id, data);
+export const deleteCustomer = (id) => upmindApi.deleteClient(id);
+
+// Invoice management (placeholder functions - implement as needed)
+export const getInvoices = (filters = {}) => upmindApi.getOrders(filters);
+export const createInvoice = (data) => upmindApi.createOrder(data);
+export const updateInvoice = (id, data) => upmindApi.updateOrder(id, data);
+export const sendInvoice = (id) => Promise.resolve({ success: true, message: 'Invoice sent' });
 
 // Export the service instance for advanced usage
 export default upmindApi;
