@@ -30,10 +30,18 @@ const UpmindSettingsManager = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingConfig, setEditingConfig] = useState(null);
 
-  // Initialize with safe defaults to prevent undefined errors
-  const [configs, setConfigs] = useState([]);
-  const [activeConfig, setActiveConfig] = useState(null);
-  const [isReady, setIsReady] = useState(false);
+  // Use the API config hook
+  const { 
+    allConfigs: configs, 
+    activeConfig, 
+    switchConfiguration: setActiveConfig, 
+    addConfiguration: addConfig, 
+    updateConfiguration: updateConfig, 
+    deleteConfiguration: deleteConfig,
+    loading,
+    isValid,
+    error: hookError
+  } = useActiveApiConfig();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -45,36 +53,33 @@ const UpmindSettingsManager = () => {
     description: ''
   });
 
-  // Simulate loading configs (replace with actual API call later)
-  useEffect(() => {
-    const loadConfigs = async () => {
-      try {
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // For now, set empty array - this prevents the .length error
-        setConfigs([]);
-        setIsReady(true);
-      } catch (error) {
-        console.error('Error loading configs:', error);
-        setConfigs([]); // Ensure configs is always an array
-        setIsReady(true);
-      }
-    };
-
-    loadConfigs();
-  }, []);
+  // The useActiveApiConfig hook handles loading configurations automatically
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Simulate save operation
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log('Configuration saved:', formData);
-      setTestResult({ success: true, message: 'Configuration saved successfully!' });
+      // Use the actual addConfig function from the hook
+      const result = await addConfig(formData);
+      
+      if (result.success) {
+        console.log('Configuration saved:', result.config);
+        setTestResult({ success: true, message: 'Configuration saved successfully!' });
+        // Reset form after successful save
+        setFormData({
+          name: '',
+          apiKey: '',
+          baseUrl: 'https://api.upmind.com/v1',
+          environment: 'production',
+          timeout: 30000,
+          retryAttempts: 3,
+          description: ''
+        });
+      } else {
+        setTestResult({ success: false, message: result.error || 'Failed to save configuration' });
+      }
     } catch (error) {
       console.error('Error saving configuration:', error);
-      setTestResult({ success: false, message: 'Failed to save configuration' });
+      setTestResult({ success: false, message: `Failed to save configuration: ${error.message}` });
     } finally {
       setSaving(false);
     }
@@ -100,7 +105,7 @@ const UpmindSettingsManager = () => {
   };
 
   // Show loading state while configs are being loaded
-  if (!isReady) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
