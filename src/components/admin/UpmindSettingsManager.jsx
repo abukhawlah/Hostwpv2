@@ -58,8 +58,16 @@ const UpmindSettingsManager = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
+      // Map form data to the expected API config format
+      const configData = {
+        ...formData,
+        token: formData.apiKey, // Map apiKey to token
+        brandId: 'default', // Add default brandId since it's required
+        label: formData.name || 'Unnamed Configuration' // Add label field
+      };
+      
       // Use the actual addConfig function from the hook
-      const result = await addConfig(formData);
+      const result = await addConfig(configData);
       
       if (result.success) {
         console.log('Configuration saved:', result.config);
