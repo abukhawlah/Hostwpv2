@@ -197,7 +197,12 @@ class UpmindHttpClient {
       'Cross-Origin',
       'Network request failed',
       'TypeError: Failed to fetch',
-      'net::ERR_FAILED'
+      'net::ERR_FAILED',
+      'blocked by CORS policy',
+      'CORS policy',
+      'Access to fetch',
+      'has been blocked by CORS',
+      'not allowed by Access-Control-Allow-Headers'
     ];
     
     return corsIndicators.some(indicator => 
@@ -301,8 +306,13 @@ class UpmindHttpClient {
       requestOptions.body = typeof options.body === 'string' ? options.body : JSON.stringify(options.body);
     }
 
-    // If we've determined to use proxy, go straight to proxy
-    if (this.useProxy) {
+    // Check if we're in a browser environment and making cross-origin requests
+    const isBrowser = typeof window !== 'undefined';
+    const isCrossOrigin = isBrowser && window.location.origin !== new URL(this.baseUrl).origin;
+    
+    // If we've determined to use proxy, or if this is a cross-origin request in browser, go straight to proxy
+    if (this.useProxy || (isBrowser && isCrossOrigin)) {
+      console.log(`🔄 [Upmind API] Using proxy for cross-origin request: ${url}`);
       return this.executeViaProxy(url, requestOptions);
     }
 
