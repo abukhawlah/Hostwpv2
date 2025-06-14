@@ -15,7 +15,7 @@ import AdminLayout from './components/admin/AdminLayout';
 import OrdersManager from './components/admin/OrdersManager';
 import CustomersManager from './components/admin/CustomersManager';
 import InvoicesManager from './components/admin/InvoicesManager';
-import UpmindSettingsManager from './components/admin/UpmindSettingsManager';
+
 
 // Import other components
 import Navbar from './components/Navbar';
@@ -33,7 +33,7 @@ function App() {
                 <p>If you see this, React Router is working!</p>
                 <p>Time: {new Date().toLocaleString()}</p>
                 <a href="/test" style={{color: 'blue'}}>Go to /test</a><br/>
-                <a href="/admin/upmind-settings" style={{color: 'blue'}}>Go to /admin/upmind-settings</a>
+                <a href="/admin/settings" style={{color: 'blue'}}>Go to /admin/settings</a>
               </div>
             } />
             
@@ -87,11 +87,11 @@ function App() {
               <Route path="orders" element={<OrdersManager />} />
               <Route path="customers" element={<CustomersManager />} />
               <Route path="invoices" element={<InvoicesManager />} />
-              <Route path="settings" element={<UpmindSettingsManager />} />
+              <Route path="settings" element={<div className="p-6"><h1>Settings</h1><p>Settings panel coming soon</p></div>} />
             </Route>
             
             {/* Direct test route bypassing AdminLayout */}
-            <Route path="/admin/upmind-settings" element={<UpmindSettingsManager />} />
+            <Route path="/admin/settings" element={<div className="p-6"><h1>Settings</h1><p>Settings panel coming soon</p></div>} />
             
             {/* Ultra basic test route */}
             <Route path="/test" element={<div style={{padding: '20px', backgroundColor: 'yellow'}}><h1>Ultra Basic Test</h1><p>This is just a div with no imports</p></div>} />

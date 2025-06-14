@@ -1,0 +1,158 @@
+<context>
+# Overview  
+HostWP is a comprehensive WordPress hosting platform that provides managed hosting services with integrated domain management, customer management, and billing capabilities. The platform serves as both a customer-facing website for hosting services and an administrative dashboard for managing the hosting business operations.
+
+The platform solves the problem of fragmented hosting management by providing a unified interface that integrates with Upmind API for backend operations while offering a modern, responsive frontend for customers and administrators.
+
+# Core Features  
+## Customer-Facing Features
+- **Hosting Plans Display**: Dynamic hosting plans pulled from Upmind API with pricing, features, and specifications
+- **Domain Search & Registration**: Real-time domain availability checking and registration through Upmind integration
+- **Customer Portal**: Account management, service overview, and billing history
+- **Support System**: White-glove support request system and FAQ section
+- **Responsive Design**: Mobile-first design with modern UI/UX using Tailwind CSS and Framer Motion
+
+## Administrative Features
+- **Admin Dashboard**: Comprehensive overview of business metrics and operations
+- **Customer Management**: CRUD operations for customer accounts with Upmind synchronization
+- **Order Management**: Order processing, status tracking, and fulfillment management
+- **Invoice Management**: Billing, invoice generation, and payment tracking
+- **Hosting Plans Management**: Dynamic management of hosting plans with real-time Upmind sync
+- **Content Management**: Website content updates, SEO management, and feature toggles
+- **API Configuration**: Upmind API settings management with connection testing
+
+# User Experience  
+## User Personas
+- **End Customers**: Small to medium businesses looking for reliable WordPress hosting
+- **Business Administrators**: HostWP staff managing customer accounts and operations
+- **Technical Support**: Staff handling customer support requests and technical issues
+
+## Key User Flows
+- **Customer Journey**: Landing page → Hosting plans → Domain search → Account creation → Service activation
+- **Admin Workflow**: Login → Dashboard overview → Customer/order management → API synchronization
+- **Support Flow**: Customer contact → Ticket creation → Resolution tracking
+
+## UI/UX Considerations
+- Modern, professional design with consistent branding
+- Responsive layout optimized for all device sizes
+- Intuitive navigation with clear call-to-actions
+- Real-time feedback for API operations and form submissions
+</context>
+
+<PRD>
+# Technical Architecture  
+## System Components
+- **Frontend**: React 19 with Vite build system, React Router for navigation
+- **Styling**: Tailwind CSS for utility-first styling, Framer Motion for animations
+- **State Management**: React Context API for global state (site settings, API configuration)
+- **Backend Integration**: Supabase for database operations, Upmind API for hosting operations
+- **Deployment**: Vercel with automatic deployments from Git repository
+
+## Data Models
+- **Site Settings**: Global configuration stored in Supabase
+- **API Configuration**: Upmind API credentials and settings
+- **Customer Data**: Synchronized between local database and Upmind
+- **Orders & Invoices**: Managed through Upmind API with local caching
+- **Hosting Plans**: Dynamic data pulled from Upmind with local customization options
+
+## APIs and Integrations
+- **Upmind API**: Primary integration for hosting operations, customer management, billing
+- **Supabase API**: Database operations for site settings and local data storage
+- **CORS Proxy**: Server-side proxy for handling cross-origin Upmind API requests
+- **Domain API**: Integration for domain search and registration services
+
+## Infrastructure Requirements
+- **Hosting**: Vercel serverless functions for API proxying
+- **Database**: Supabase PostgreSQL for persistent data storage
+- **CDN**: Vercel Edge Network for global content delivery
+- **SSL**: Automatic HTTPS with Vercel SSL certificates
+
+# Development Roadmap  
+## Phase 1: Foundation & Core Infrastructure
+- **Project Setup**: Complete development environment with all dependencies
+- **Database Schema**: Supabase tables for site settings and configuration
+- **Authentication System**: Admin login and session management
+- **API Integration**: Upmind API client with CORS proxy implementation
+- **Basic Admin Dashboard**: Core administrative interface structure
+
+## Phase 2: Customer-Facing Features
+- **Public Website**: Landing page, hosting plans, domain search functionality
+- **Responsive Design**: Mobile-optimized layouts and interactions
+- **Content Management**: Dynamic content loading from database
+- **SEO Optimization**: Meta tags, structured data, and performance optimization
+- **Contact & Support**: Contact forms and support request system
+
+## Phase 3: Administrative Operations
+- **Customer Management**: Full CRUD operations with Upmind synchronization
+- **Order Processing**: Order management workflow and status tracking
+- **Invoice Management**: Billing operations and payment tracking
+- **Hosting Plans Management**: Dynamic plan configuration and pricing
+- **API Configuration**: Settings management with connection testing
+
+## Phase 4: Advanced Features & Optimization
+- **Real-time Synchronization**: Automated data sync between systems
+- **Advanced Analytics**: Business metrics and performance tracking
+- **Enhanced Security**: Rate limiting, input validation, and security headers
+- **Performance Optimization**: Caching strategies and load optimization
+- **Monitoring & Logging**: Error tracking and system health monitoring
+
+# Logical Dependency Chain
+## Foundation First (Critical Path)
+1. **Environment Setup**: Development tools, dependencies, and build configuration
+2. **Database Schema**: Core tables and relationships in Supabase
+3. **API Client**: Upmind integration with CORS proxy for cross-origin requests
+4. **Authentication**: Admin login system for secure access
+
+## Visible Frontend (Quick Wins)
+5. **Public Landing Page**: Basic website structure with hosting information
+6. **Responsive Layout**: Mobile-friendly design and navigation
+7. **Hosting Plans Display**: Dynamic plans from Upmind API
+8. **Domain Search**: Real-time domain availability checking
+
+## Administrative Core
+9. **Admin Dashboard**: Central management interface
+10. **Customer Management**: CRUD operations with API synchronization
+11. **Order Management**: Order processing and tracking
+12. **Settings Management**: API configuration and site settings
+
+## Advanced Integration
+13. **Real-time Sync**: Automated data synchronization
+14. **Error Handling**: Comprehensive error management and user feedback
+15. **Performance Optimization**: Caching and load optimization
+16. **Security Hardening**: Input validation and security measures
+
+# Risks and Mitigations  
+## Technical Challenges
+- **CORS Issues**: Mitigated with server-side proxy implementation
+- **API Rate Limits**: Implement caching and request throttling
+- **Data Synchronization**: Use transaction-based operations and conflict resolution
+- **Performance**: Implement lazy loading and code splitting
+
+## MVP Scope Management
+- **Core Features First**: Focus on essential hosting and customer management
+- **Iterative Development**: Build upon working foundation with incremental features
+- **User Feedback**: Prioritize features based on actual usage patterns
+
+## Resource Constraints
+- **API Dependencies**: Ensure fallback mechanisms for Upmind API unavailability
+- **Development Time**: Prioritize high-impact features for initial release
+- **Maintenance**: Design for easy updates and feature additions
+
+# Appendix  
+## Current Implementation Status
+- **Completed**: Basic React application structure, Upmind API integration, CORS proxy
+- **In Progress**: Admin dashboard functionality, customer management features
+- **Pending**: Public website optimization, advanced administrative features
+
+## Technical Specifications
+- **React Version**: 19.1.0 with modern hooks and concurrent features
+- **Build Tool**: Vite 6.3.5 for fast development and optimized builds
+- **Styling**: Tailwind CSS 3.4.17 with custom component library
+- **Database**: Supabase with PostgreSQL backend
+- **Deployment**: Vercel with automatic CI/CD from Git repository
+
+## Integration Details
+- **Upmind API**: RESTful API for hosting operations with Bearer token authentication
+- **Supabase**: Real-time database with Row Level Security (RLS) policies
+- **Vercel Functions**: Serverless functions for API proxying and server-side operations
+</PRD> 

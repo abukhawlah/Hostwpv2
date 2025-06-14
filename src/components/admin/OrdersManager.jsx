@@ -17,7 +17,7 @@ import {
   WifiOff
 } from 'lucide-react';
 import { useActiveApiConfig } from '../../hooks/useActiveApiConfig';
-import { getOrders, createOrder } from '../../services/upmind';
+// Upmind integration removed - using local data only
 
 const OrdersManager = () => {
   const { activeConfig, isValid: isApiConfigured } = useActiveApiConfig();
@@ -45,7 +45,7 @@ const OrdersManager = () => {
       currency: 'USD',
       items: [{ name: 'WordPress Hosting Pro', quantity: 1, price: 299.99 }],
       createdAt: '2024-01-15T10:30:00Z',
-      upmindOrderId: 'UPM-12345'
+      externalOrderId: null
     },
     {
       id: 'ORD-2024-002',
@@ -56,7 +56,7 @@ const OrdersManager = () => {
       currency: 'USD',
       items: [{ name: 'Cloud Hosting Enterprise', quantity: 1, price: 599.99 }],
       createdAt: '2024-01-16T14:20:00Z',
-      upmindOrderId: 'UPM-12346'
+      externalOrderId: null
     },
     {
       id: 'ORD-2024-003',
@@ -67,7 +67,7 @@ const OrdersManager = () => {
       currency: 'USD',
       items: [{ name: 'WordPress Hosting Basic', quantity: 1, price: 149.99 }],
       createdAt: '2024-01-17T09:15:00Z',
-      upmindOrderId: null
+      externalOrderId: null
     }
   ];
 
@@ -118,35 +118,7 @@ const OrdersManager = () => {
     setFilteredOrders(filtered);
   }, [orders, searchTerm, statusFilter, dateFilter]);
 
-  const handleSyncWithUpmind = async () => {
-    if (!isApiConfigured) {
-      setSyncMessage('Please configure API settings first');
-      return;
-    }
-
-    setSyncStatus('syncing');
-    setSyncMessage('Syncing orders with Upmind...');
-
-    try {
-      const response = await getOrders();
-      if (response.success) {
-        setSyncStatus('success');
-        setSyncMessage('Orders synced successfully');
-        setLastSyncTime(new Date());
-      } else {
-        setSyncStatus('error');
-        setSyncMessage(response.error || 'Failed to sync orders');
-      }
-    } catch (error) {
-      setSyncStatus('error');
-      setSyncMessage('Error syncing orders: ' + error.message);
-    }
-
-    setTimeout(() => {
-      setSyncStatus('idle');
-      setSyncMessage('');
-    }, 3000);
-  };
+  // Sync functionality removed - Upmind integration discontinued
 
   const getStatusBadge = (status) => {
     const statusConfig = {
@@ -212,14 +184,7 @@ const OrdersManager = () => {
           <p className="text-gray-600">Manage customer orders and track order status</p>
         </div>
         <div className="flex space-x-3">
-          <button
-            onClick={handleSyncWithUpmind}
-            disabled={!isApiConfigured || syncStatus === 'syncing'}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`} />
-            Sync with Upmind
-          </button>
+
           <button className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
             <Plus className="w-4 h-4 mr-2" />
             New Order
@@ -227,36 +192,7 @@ const OrdersManager = () => {
         </div>
       </div>
 
-      {/* Sync Status Bar */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              {isApiConfigured ? (
-                <Wifi className="w-5 h-5 text-green-500" />
-              ) : (
-                <WifiOff className="w-5 h-5 text-red-500" />
-              )}
-              <span className="text-sm font-medium">
-                {isApiConfigured ? 'Connected to Upmind' : 'Not Connected'}
-              </span>
-            </div>
-            {lastSyncTime && (
-              <div className="text-sm text-gray-500">
-                Last sync: {formatDate(lastSyncTime)}
-              </div>
-            )}
-          </div>
-          {syncMessage && (
-            <div className={`text-sm ${
-              syncStatus === 'success' ? 'text-green-600' : 
-              syncStatus === 'error' ? 'text-red-600' : 'text-blue-600'
-            }`}>
-              {syncMessage}
-            </div>
-          )}
-        </div>
-      </div>
+
 
       {/* Filters and Search */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -345,9 +281,7 @@ const OrdersManager = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col">
                         <div className="text-sm font-medium text-gray-900">{order.id}</div>
-                        {order.upmindOrderId && (
-                          <div className="text-xs text-gray-500">Upmind: {order.upmindOrderId}</div>
-                        )}
+                        
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

@@ -22,7 +22,7 @@ import {
   WifiOff
 } from 'lucide-react';
 import { useActiveApiConfig } from '../../hooks/useActiveApiConfig';
-import { getCustomers, createCustomer, updateCustomer } from '../../services/upmind';
+// Upmind integration removed - using local data only
 
 const CustomersManager = () => {
   const { activeConfig, isValid: isApiConfigured } = useActiveApiConfig();
@@ -60,7 +60,7 @@ const CustomersManager = () => {
         zip: '10001',
         country: 'USA'
       },
-      upmindCustomerId: 'UPM-CUST-001'
+      externalId: null
     },
     {
       id: 'CUST-002',
@@ -80,7 +80,7 @@ const CustomersManager = () => {
         zip: '90210',
         country: 'USA'
       },
-      upmindCustomerId: 'UPM-CUST-002'
+      externalId: null
     },
     {
       id: 'CUST-003',
@@ -100,7 +100,7 @@ const CustomersManager = () => {
         zip: '78701',
         country: 'USA'
       },
-      upmindCustomerId: null
+      externalId: null
     },
     {
       id: 'CUST-004',
@@ -120,7 +120,7 @@ const CustomersManager = () => {
         zip: '98101',
         country: 'USA'
       },
-      upmindCustomerId: 'UPM-CUST-004'
+      externalId: null
     }
   ];
 
@@ -148,35 +148,7 @@ const CustomersManager = () => {
     setFilteredCustomers(filtered);
   }, [customers, searchTerm, statusFilter]);
 
-  const handleSyncWithUpmind = async () => {
-    if (!isApiConfigured) {
-      setSyncMessage('Please configure API settings first');
-      return;
-    }
-
-    setSyncStatus('syncing');
-    setSyncMessage('Syncing customers with Upmind...');
-
-    try {
-      const response = await getCustomers();
-      if (response.success) {
-        setSyncStatus('success');
-        setSyncMessage('Customers synced successfully');
-        setLastSyncTime(new Date());
-      } else {
-        setSyncStatus('error');
-        setSyncMessage(response.error || 'Failed to sync customers');
-      }
-    } catch (error) {
-      setSyncStatus('error');
-      setSyncMessage('Error syncing customers: ' + error.message);
-    }
-
-    setTimeout(() => {
-      setSyncStatus('idle');
-      setSyncMessage('');
-    }, 3000);
-  };
+  // Sync functionality removed - Upmind integration discontinued
 
   const getStatusBadge = (status) => {
     const statusConfig = {
@@ -221,14 +193,7 @@ const CustomersManager = () => {
           <p className="text-gray-600">Manage customer accounts and information</p>
         </div>
         <div className="flex space-x-3">
-          <button
-            onClick={handleSyncWithUpmind}
-            disabled={!isApiConfigured || syncStatus === 'syncing'}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`} />
-            Sync with Upmind
-          </button>
+
           <button
             onClick={() => setShowAddCustomer(true)}
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
@@ -239,36 +204,7 @@ const CustomersManager = () => {
         </div>
       </div>
 
-      {/* Sync Status Bar */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              {isApiConfigured ? (
-                <Wifi className="w-5 h-5 text-green-500" />
-              ) : (
-                <WifiOff className="w-5 h-5 text-red-500" />
-              )}
-              <span className="text-sm font-medium">
-                {isApiConfigured ? 'Connected to Upmind' : 'Not Connected'}
-              </span>
-            </div>
-            {lastSyncTime && (
-              <div className="text-sm text-gray-500">
-                Last sync: {formatDate(lastSyncTime)}
-              </div>
-            )}
-          </div>
-          {syncMessage && (
-            <div className={`text-sm ${
-              syncStatus === 'success' ? 'text-green-600' : 
-              syncStatus === 'error' ? 'text-red-600' : 'text-blue-600'
-            }`}>
-              {syncMessage}
-            </div>
-          )}
-        </div>
-      </div>
+
 
       {/* Filters and Search */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -352,9 +288,7 @@ const CustomersManager = () => {
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">{customer.name}</div>
                           <div className="text-sm text-gray-500">{customer.company}</div>
-                          {customer.upmindCustomerId && (
-                            <div className="text-xs text-blue-600">Synced with Upmind</div>
-                          )}
+                          
                         </div>
                       </div>
                     </td>
@@ -430,12 +364,7 @@ const CustomersManager = () => {
                   <div className="flex justify-between items-center">
                     <div className="flex space-x-4">
                       {getStatusBadge(selectedCustomer.status)}
-                      {selectedCustomer.upmindCustomerId && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Synced with Upmind
-                        </span>
-                      )}
+
                     </div>
                     <div className="text-right">
                       <div className="text-lg font-bold text-gray-900">

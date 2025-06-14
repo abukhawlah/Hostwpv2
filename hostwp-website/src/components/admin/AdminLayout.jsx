@@ -35,7 +35,7 @@ const AdminLayout = () => {
     { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
     { name: 'Customers', href: '/admin/customers', icon: Users },
     { name: 'Invoices', href: '/admin/invoices', icon: FileText },
-    { name: 'Upmind Settings', href: '/admin/upmind-settings', icon: Settings },
+
     { name: 'Features', href: '/admin/features', icon: CheckCircle },
     { name: 'SEO Settings', href: '/admin/seo', icon: TrendingUp },
     { name: 'Site Settings', href: '/admin/settings', icon: Settings },

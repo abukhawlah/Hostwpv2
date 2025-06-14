@@ -3,11 +3,7 @@
   "outputDirectory": "hostwp-website/dist",
   "installCommand": "cd hostwp-website && npm install",
   "framework": "vite",
-  "functions": {
-    "api/upmind-proxy.js": {
-      "maxDuration": 30
-    }
-  },
+
   "rewrites": [
     {
       "source": "/api/(.*)",
