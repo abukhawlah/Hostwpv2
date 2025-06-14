@@ -43,6 +43,16 @@ const UpmindSettingsManager = () => {
     error: hookError
   } = useActiveApiConfig();
 
+  // Debug logging
+  console.log('🔥 Hook state:', { 
+    configs: configs?.length, 
+    activeConfig: !!activeConfig, 
+    addConfig: typeof addConfig,
+    loading,
+    isValid,
+    hookError 
+  });
+
   const [formData, setFormData] = useState({
     name: '',
     apiKey: '',
@@ -56,6 +66,7 @@ const UpmindSettingsManager = () => {
   // The useActiveApiConfig hook handles loading configurations automatically
 
   const handleSave = async () => {
+    console.log('🔥 handleSave called!', { formData, addConfig: typeof addConfig });
     setSaving(true);
     try {
       // Map form data to the expected API config format
@@ -66,8 +77,12 @@ const UpmindSettingsManager = () => {
         label: formData.name || 'Unnamed Configuration' // Add label field
       };
       
+      console.log('🔥 About to call addConfig with:', configData);
+      
       // Use the actual addConfig function from the hook
       const result = await addConfig(configData);
+      
+      console.log('🔥 addConfig result:', result);
       
       if (result.success) {
         console.log('Configuration saved:', result.config);
@@ -86,7 +101,7 @@ const UpmindSettingsManager = () => {
         setTestResult({ success: false, message: result.error || 'Failed to save configuration' });
       }
     } catch (error) {
-      console.error('Error saving configuration:', error);
+      console.error('🔥 Error in handleSave:', error);
       setTestResult({ success: false, message: `Failed to save configuration: ${error.message}` });
     } finally {
       setSaving(false);
@@ -312,7 +327,10 @@ const UpmindSettingsManager = () => {
             </button>
 
             <button
-              onClick={handleSave}
+              onClick={(e) => {
+                console.log('🔥 Save button clicked!', e);
+                handleSave();
+              }}
               disabled={saving || !formData.name || !formData.apiKey || !formData.baseUrl}
               className="inline-flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
