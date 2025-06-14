@@ -166,148 +166,63 @@ const UpmindSettingsManager = () => {
     try {
       console.log('🧪 Testing connection to:', formData.baseUrl);
       
-      // Create a temporary config for testing
+      const startTime = Date.now();
+      
+      // Import the testConnection function from the service
+      const { testConnection } = await import('../../services/upmind.js');
+      
+      // Create test configuration
       const testConfig = {
         baseUrl: formData.baseUrl,
         token: formData.apiKey,
         brandId: formData.brandId || 'default'
       };
 
-      // Test 1: Basic connectivity
-      console.log('🔍 Step 1: Testing basic connectivity...');
-      const connectivityStart = Date.now();
+      console.log('🔍 Running comprehensive API test...');
       
-      try {
-        const testUrl = formData.baseUrl.replace(/\/api\/v1$/, '');
-        const response = await fetch(testUrl, { 
-          method: 'HEAD',
-          mode: 'no-cors'
-        });
-        console.log('✅ Basic connectivity test passed');
-      } catch (error) {
-        console.log('⚠️ Basic connectivity test failed, but continuing...');
-      }
-
-      // Test 2: API Authentication
-      console.log('🔍 Step 2: Testing API authentication...');
-      const authTestUrl = `${formData.baseUrl}/auth/test`;
+      // Use the service's test connection method
+      const result = await testConnection(testConfig);
       
-      let authResponse;
-      try {
-        authResponse = await fetch(authTestUrl, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${formData.apiKey}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-Brand-ID': formData.brandId || 'default'
-          }
-        });
-        console.log('🔐 Auth test response status:', authResponse.status);
-      } catch (error) {
-        console.log('⚠️ Auth test failed, trying alternative endpoints...');
-      }
-
-      // Test 3: Try to fetch products (real API test)
-      console.log('🔍 Step 3: Testing API endpoints...');
-      const productTestUrls = [
-        `${formData.baseUrl}/products`,
-        `${formData.baseUrl}/services`,
-        `${formData.baseUrl}/hosting-plans`,
-        `${formData.baseUrl}/plans`
-      ];
-
-      let apiWorking = false;
-      let apiResponse = null;
-      let workingEndpoint = null;
-
-      for (const testUrl of productTestUrls) {
-        try {
-          console.log(`🔍 Testing endpoint: ${testUrl}`);
-          const response = await fetch(testUrl, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${formData.apiKey}`,
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'X-Brand-ID': formData.brandId || 'default'
-            }
-          });
-
-          console.log(`📊 ${testUrl} response:`, response.status, response.statusText);
-
-          if (response.ok) {
-            try {
-              const data = await response.json();
-              console.log(`✅ ${testUrl} returned data:`, data);
-              apiWorking = true;
-              apiResponse = data;
-              workingEndpoint = testUrl;
-              break;
-            } catch (jsonError) {
-              console.log(`⚠️ ${testUrl} returned non-JSON response`);
-            }
-          } else if (response.status === 401) {
-            throw new Error('Authentication failed. Please check your API key.');
-          } else if (response.status === 403) {
-            throw new Error('Access forbidden. Please check your API permissions.');
-          }
-        } catch (error) {
-          console.log(`❌ ${testUrl} failed:`, error.message);
-          if (error.message.includes('Authentication') || error.message.includes('Access forbidden')) {
-            throw error; // Re-throw auth errors immediately
-          }
-        }
-      }
-
-      const responseTime = Date.now() - connectivityStart;
-
-      if (apiWorking) {
-        // Success - API is working
-        const productCount = Array.isArray(apiResponse) ? apiResponse.length : 
-                           apiResponse?.data?.length || 
-                           apiResponse?.products?.length || 
-                           apiResponse?.services?.length || 0;
-
+      const responseTime = Date.now() - startTime;
+      
+      if (result.success) {
         setTestResult({
           success: true,
           message: 'Connection successful! API is responding correctly.',
           details: {
             responseTime: `${responseTime}ms`,
-            workingEndpoint: workingEndpoint.replace(formData.baseUrl, ''),
-            dataFound: `${productCount} items found`,
-            authStatus: 'Valid',
-            apiVersion: apiResponse?.version || 'Unknown'
-          }
-        });
-      } else if (authResponse && (authResponse.status === 200 || authResponse.status === 401)) {
-        // API is reachable but no data endpoints work
-        setTestResult({
-          success: false,
-          message: 'API is reachable but no product endpoints are working. This might be a configuration issue.',
-          details: {
-            responseTime: `${responseTime}ms`,
-            authStatus: authResponse.status === 200 ? 'Valid' : 'Invalid',
-            issue: 'No working data endpoints found'
+            connectivity: result.connectivity ? 'Connected' : 'Limited',
+            workingEndpoint: result.workingEndpoint || 'None found',
+            dataAvailable: result.dataAvailable ? 'Yes' : 'No',
+            dataCount: result.dataCount || 0,
+            authStatus: 'Valid'
           }
         });
       } else {
-        // Complete failure
-        throw new Error('API is not responding or all endpoints failed');
+        throw new Error(result.error || 'Unknown error occurred');
       }
 
     } catch (error) {
       console.error('❌ Connection test failed:', error);
+      
+      let suggestion = 'Check your base URL and network connection';
+      
+      if (error.message.includes('Authentication') || error.message.includes('401')) {
+        suggestion = 'Check your API key in the Upmind dashboard';
+      } else if (error.message.includes('Access forbidden') || error.message.includes('403')) {
+        suggestion = 'Verify your API permissions and brand ID';
+      } else if (error.message.includes('CORS')) {
+        suggestion = 'CORS issue - check if the API allows requests from this domain';
+      } else if (error.message.includes('Network')) {
+        suggestion = 'Network connectivity issue - check your internet connection';
+      }
+      
       setTestResult({
         success: false,
         message: `Connection failed: ${error.message}`,
         details: {
-          error: error.name,
-          suggestion: error.message.includes('Authentication') ? 
-            'Check your API key in the Upmind dashboard' :
-            error.message.includes('Access forbidden') ?
-            'Verify your API permissions and brand ID' :
-            'Check your base URL and network connection'
+          error: error.name || 'Error',
+          suggestion: suggestion
         }
       });
     } finally {
