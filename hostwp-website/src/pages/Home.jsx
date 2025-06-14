@@ -98,7 +98,7 @@ const Home = () => {
                   <Zap className="w-6 h-6 text-primary-600 mr-2" />
                   <span className="text-lg font-semibold text-primary-600">{whyChooseContent.badge}</span>
                 </div>
-                <h2 className="section-title">{whyChooseContent.headline} - DEPLOYMENT TEST v4.0</h2>
+                <h2 className="section-title">{whyChooseContent.headline}</h2>
                 <p className="section-subtitle max-w-3xl mx-auto">
                   {whyChooseContent.subheadline}
                 </p>

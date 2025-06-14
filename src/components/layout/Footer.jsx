@@ -224,7 +224,7 @@ const Footer = () => {
         >
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="text-gray-400 text-sm">
-              © {new Date().getFullYear()} HostWP. All rights reserved. | v3.1 - {new Date().toISOString().slice(0, 16)}
+              © {new Date().getFullYear()} HostWP. All rights reserved. | v4.1 - Build: {new Date().toISOString().slice(0, 16)}
             </div>
             
             <div className="flex items-center space-x-6 text-sm text-gray-400">
