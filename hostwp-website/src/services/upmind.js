@@ -131,6 +131,25 @@ class UpmindHttpClient {
     } catch (error) {
       console.error(`[Upmind API] Network Error (attempt ${attempt}):`, error);
       
+      // Detailed error analysis
+      let errorType = 'Unknown';
+      if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+        errorType = 'CORS or Network';
+        console.error('🚫 This is likely a CORS issue or the server is unreachable');
+        console.error('💡 Check: 1) Server is running, 2) CORS headers, 3) SSL certificate, 4) API token');
+      } else if (error.name === 'AbortError') {
+        errorType = 'Timeout';
+      } else if (error.message.includes('SSL') || error.message.includes('certificate')) {
+        errorType = 'SSL/Certificate';
+      }
+      
+      console.error(`🔍 Error Type: ${errorType}`);
+      console.error(`🔍 Error Details:`, {
+        name: error.name,
+        message: error.message,
+        stack: error.stack?.split('\n')[0]
+      });
+      
       // Retry network errors
       if (attempt < this.maxRetries) {
         console.warn(`[Upmind API] Network Error, retrying in ${this.retryDelay}ms...`);
@@ -140,8 +159,8 @@ class UpmindHttpClient {
       
       return {
         success: false,
-        error: `Network error: ${error.message}`,
-        details: error
+        error: `${errorType} error: ${error.message}`,
+        details: { ...error, errorType }
       };
     }
   }
@@ -226,6 +245,21 @@ class UpmindApiService {
   
   // Product Management
   async getProducts() {
+    // First, let's test basic connectivity
+    const config = UpmindApiConfig.getActiveConfig();
+    console.log('🔧 Testing connectivity to:', config.baseUrl);
+    
+    try {
+      // Simple connectivity test without authentication
+      const testResponse = await fetch(config.baseUrl.replace('/api/v1', ''), { 
+        method: 'HEAD',
+        mode: 'no-cors' 
+      });
+      console.log('🌐 Basic connectivity test completed');
+    } catch (testError) {
+      console.error('🚫 Basic connectivity failed:', testError);
+    }
+    
     // Try different possible endpoints for Upmind products
     const possibleEndpoints = [
       '/products',
