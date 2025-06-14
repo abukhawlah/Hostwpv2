@@ -310,6 +310,14 @@ class UpmindHttpClient {
     const isBrowser = typeof window !== 'undefined';
     const isCrossOrigin = isBrowser && window.location.origin !== new URL(this.baseUrl).origin;
     
+    console.log(`🔍 [Upmind API] Environment check:`, {
+      isBrowser,
+      currentOrigin: isBrowser ? window.location.origin : 'N/A',
+      apiOrigin: new URL(this.baseUrl).origin,
+      isCrossOrigin,
+      useProxy: this.useProxy
+    });
+    
     // If we've determined to use proxy, or if this is a cross-origin request in browser, go straight to proxy
     if (this.useProxy || (isBrowser && isCrossOrigin)) {
       console.log(`🔄 [Upmind API] Using proxy for cross-origin request: ${url}`);
