@@ -1,35 +1,24 @@
 import React from 'react';
 
+console.log('=== UpmindSettingsManager module loading ===');
+
 export default function UpmindSettingsManager() {
-  console.log('UpmindSettingsManager rendering...');
+  console.log('=== UpmindSettingsManager function called ===');
+  console.log('=== About to return JSX ===');
   
-  try {
-    return (
-      <div style={{ 
-        padding: '20px', 
-        backgroundColor: 'lightblue',
-        border: '2px solid blue',
-        margin: '10px'
-      }}>
-        <h1>✅ UpmindSettingsManager Loaded Successfully</h1>
-        <p>✅ Component is rendering without errors</p>
-        <p>✅ Current time: {new Date().toLocaleString()}</p>
-        <p>✅ No arrays or objects being accessed</p>
-        <div style={{ marginTop: '20px', padding: '10px', backgroundColor: 'white' }}>
-          <h3>Debug Info:</h3>
-          <p>Component: UpmindSettingsManager</p>
-          <p>Status: Working</p>
-          <p>Error: None</p>
-        </div>
-      </div>
-    );
-  } catch (error) {
-    console.error('Error in UpmindSettingsManager:', error);
-    return (
-      <div style={{ padding: '20px', backgroundColor: 'red', color: 'white' }}>
-        <h1>❌ Error in UpmindSettingsManager</h1>
-        <p>Error: {error.message}</p>
-      </div>
-    );
-  }
+  return React.createElement('div', {
+    style: { 
+      padding: '30px', 
+      backgroundColor: 'orange',
+      border: '5px solid red',
+      fontSize: '20px',
+      fontWeight: 'bold',
+      margin: '20px'
+    }
+  }, 
+    React.createElement('h1', null, '🔥 ULTRA BASIC COMPONENT 🔥'),
+    React.createElement('p', null, 'If you see this orange box, the component is working!'),
+    React.createElement('p', null, 'Using React.createElement instead of JSX'),
+    React.createElement('p', null, 'Check console for logs')
+  );
 } 
