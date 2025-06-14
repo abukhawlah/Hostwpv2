@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ApiConfigProvider } from './hooks/useActiveApiConfig.jsx';
+// import { ApiConfigProvider } from './hooks/useActiveApiConfig.jsx';
 
 // Import pages
 import Home from './pages/Home';
@@ -25,8 +25,7 @@ import Footer from './components/Footer';
 
 function App() {
   return (
-    <ApiConfigProvider>
-      <Router>
+    <Router>
         <div className="min-h-screen bg-gray-50">
           <Routes>
             {/* Public routes */}
@@ -87,7 +86,6 @@ function App() {
           </Routes>
         </div>
       </Router>
-    </ApiConfigProvider>
   );
 }
 
