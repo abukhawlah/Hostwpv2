@@ -384,7 +384,7 @@ class UpmindHttpClient {
 // Main Upmind API Service
 class UpmindApiService {
   constructor() {
-    this.client = new UpmindAPI(); // Create a new instance
+    this.client = new UpmindHttpClient(); // Create a new instance
   }
   
   // Configuration method

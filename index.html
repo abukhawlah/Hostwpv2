@@ -9,13 +9,40 @@
     <!-- More permissive Content Security Policy -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https: wss: data:; worker-src 'self' blob:; child-src 'self' blob:;">
     
+    <!-- Cache Busting Meta Tags -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    
     <!-- Force favicon removal -->
     <link rel="icon" href="data:," />
     
-    <!-- Cache bust: 2025-06-14-11:32:00 -->
+    <!-- Force deployment update - Cache Bust: 2025-06-14-11:30:00 -->
+    <!-- Build timestamp: Sat Jun 14 2025 11:30:00 GMT -->
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    
+    <!-- Cache busting script -->
+    <script>
+      // Force cache refresh
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for(let registration of registrations) {
+            registration.unregister();
+          }
+        });
+      }
+      
+      // Clear all caches
+      if ('caches' in window) {
+        caches.keys().then(function(names) {
+          for (let name of names) {
+            caches.delete(name);
+          }
+        });
+      }
+    </script>
   </body>
 </html> 
